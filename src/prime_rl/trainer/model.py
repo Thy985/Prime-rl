@@ -1010,7 +1010,14 @@ def setup_model(
     # the right order is AC -> Compile -> FSDP
     if config.ac is not None:
         apply_ac(model, config.ac)
-    if config.compile is not None:
+    # PRL_DISABLE_COMPILE=1 skips torch.compile entirely. pydantic-config cannot
+    # express `compile = null` (TOML `null` and CLI `--model.compile null` both
+    # fail), so this env bypass is the working way to disable it. Needed here
+    # because on a single RTX 4060 Laptop GPU the first forward+backward+JIT
+    # compile of the 28-layer model exceeds the WSL/NVIDIA TDR timeout: the
+    # driver resets the device and every later CUDA call fails with
+    # "CUDA driver error: device not ready".
+    if config.compile is not None and os.environ.get("PRL_DISABLE_COMPILE") != "1":
         apply_compile(model, config.compile)
 
     setup_fsdp(model, config, parallel_dims)

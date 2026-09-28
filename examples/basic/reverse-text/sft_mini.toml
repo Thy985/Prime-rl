@@ -1,0 +1,20 @@
+max_steps = 5
+
+[ckpt]
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+
+[model.debug]
+num_layers = 2
+
+[data]
+name = "willcb/R1-reverse-wikipedia-paragraphs-v1-1000"
+seq_len = 64
+batch_size = 1
+
+[optim]
+lr = 2e-5
+
+[deployment]
+num_train_gpus = 1

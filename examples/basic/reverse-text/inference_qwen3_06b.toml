@@ -1,0 +1,18 @@
+# Standalone inference server config: base Qwen3-0.6B on the single 8GB GPU.
+backend_port = 8100
+
+[server]
+port = 8000
+
+[deployment]
+type = "single_node"
+
+[vllm]
+model = "PrimeIntellect/Qwen3-0.6B"
+dtype = "auto"
+max_model_len = 4096
+gpu_memory_utilization = 0.85
+max_num_seqs = 16
+attention_backend = "FLASH_ATTN"
+enable_lora = true
+max_lora_rank = 32

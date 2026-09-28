@@ -1,0 +1,26 @@
+max_steps = 20
+
+[ckpt]
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+[model.lora]
+rank = 16
+alpha = 32
+
+[data]
+name = "willcb/R1-reverse-wikipedia-paragraphs-v1-1000"
+seq_len = 2048
+batch_size = 16
+
+[optim]
+lr = 2e-5
+
+# LoRA SFT: only adapter params train => optimizer state is tiny, so the
+# 8GB-VRAM/11GB-RAM box fits Qwen3-0.6B for real training (full-parameter
+# fp32 AdamO same model does NOT fit host RAM; see sft_offload.toml notes).
+# Keep official model/data/pipeline; only the parameter update changes.
+# PRL_DISABLE_COMPILE=1 set at runtime.
+
+[deployment]
+num_train_gpus = 1

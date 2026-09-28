@@ -1,0 +1,30 @@
+max_steps = 100
+
+[ckpt] # Checkpoint at the end of training
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+# torch.compile is disabled at runtime via PRL_DISABLE_COMPILE=1 (see
+# src/prime_rl/trainer/model.py). On this single RTX 4060 Laptop GPU the first
+# forward+backward+JIT compile of the 28-layer model exceeds the WSL/NVIDIA TDR
+# timeout, the driver resets the device, and every later CUDA call fails with
+# "CUDA driver error: device not ready". Eager mode is slower but avoids it.
+
+[data]
+name = "willcb/R1-reverse-wikipedia-paragraphs-v1-1000"
+seq_len = 4096
+batch_size = 32
+
+[optim]
+lr = 2e-5
+
+# Single-GPU adaptation of examples/basic/reverse-text/sft.toml.
+# The official config assumes 2 GPUs (1 trainer + 1 inference). On a single
+# physical GPU we drop the inference server and online evals entirely: the
+# launcher only partitions GPUs when [inference] is present (sft.py:119), so
+# without it SFT runs a plain single-process torchrun on GPU 0.
+# Online evals are skipped here; run `uv run eval @ ...` after training to
+# measure reward. Outputs still land in outputs/sft/checkpoints/step_100.
+
+[deployment]
+num_train_gpus = 1

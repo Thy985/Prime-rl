@@ -1,0 +1,23 @@
+# Controlled Reverse-Text eval vs local inference backend (8100).
+model = "PrimeIntellect/Qwen3-0.6B"
+num_examples = 24
+group_size = 3
+
+[client]
+base_url = "http://localhost:8100/v1"
+
+[concurrency]
+min_inflight = 1
+max_inflight = 4
+
+[sampling]
+max_completion_tokens = 1024
+temperature = 0.7
+
+[[source]]
+name = "reverse-text"
+env.taskset.id = "reverse-text"
+env.taskset.dataset_name = "/home/lenovo/projects/prime-rl/outputs/reverse_text_local"
+env.taskset.dataset_split = "train"
+env.agent.harness.id = "null"
+env.agent.runtime.type = "subprocess"

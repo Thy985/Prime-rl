@@ -1,0 +1,30 @@
+# Compact-target LoRA SFT on reverse-text (true held-out later).
+# Trainer only supervises the assistant <reversed_text>...answer...</reversed_text>,
+# NOT the willcb verbose <answer> narration. PRL_DISABLE_COMPILE=1 at runtime.
+max_steps = 80
+
+[ckpt]
+interval = 40
+keep_last = 3
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+[model.lora]
+rank = 16
+alpha = 32
+
+[data]
+# local compact train dataset: prompt=[sys+user], completion=<reversed_text>{answer}</reversed_text>
+name = "/home/lenovo/projects/prime-rl/outputs/compact-sft-train"
+seq_len = 2048
+batch_size = 32
+# loss over assistant tokens only (the compact reversal target); user/system masked.
+loss_mask.assistant = true
+loss_mask.user = false
+loss_mask.system = false
+
+[optim]
+lr = 2e-5
+
+[deployment]
+num_train_gpus = 1

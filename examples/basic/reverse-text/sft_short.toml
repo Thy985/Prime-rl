@@ -1,0 +1,25 @@
+# Short-string overfit sanity check for reverse-text.
+# Overfit: does the model learn the FULL closed protocol on tiny strings?
+max_steps = 60
+
+[ckpt]
+interval = 30
+keep_last = 2
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+[model.lora]
+rank = 16
+alpha = 32
+
+[data]
+name = "/home/lenovo/projects/prime-rl/outputs/short-ovf-train"
+seq_len = 256
+batch_size = 8
+loss_mask.assistant = true
+
+[optim]
+lr = 2e-5
+
+[deployment]
+num_train_gpus = 1

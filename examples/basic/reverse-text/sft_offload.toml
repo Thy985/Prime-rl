@@ -1,0 +1,27 @@
+max_steps = 100
+
+[ckpt]
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+optim_cpu_offload = false   # full_offload conflicts with state-only CPU offload (setup_optimizer raises)
+[model.full_offload]
+numa_bind = false           # single-rank WSL; avoid GPU NUMA sysfs dependence
+
+[data]
+name = "willcb/R1-reverse-wikipedia-paragraphs-v1-1000"
+seq_len = 4096
+batch_size = 32
+
+[optim]
+lr = 2e-5
+
+# Full 0.6B on an 8GB RTX 4060 Laptop GPU (WSL2). The state-only CPU offload
+# (optim_cpu_offload) still holds fp32 weights + both Adam states on GPU at
+# optimizer.step(), which sums to ~9.6GB and exceeds the 8GB budget -> the WSL
+# vGPU host resets the device ("CUDA driver error: device not ready"). Full CPU
+# offload keeps FP32 masters/moments/accum in CPU RAM and streams BF16 compute
+# weights through GPU, fitting the full model. PRL_DISABLE_COMPILE=1 is also set.
+
+[deployment]
+num_train_gpus = 1

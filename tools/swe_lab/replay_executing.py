@@ -55,15 +55,25 @@ def main() -> int:
     ap.add_argument("--traces", default=DEFAULT_GLOB)
     args = ap.parse_args()
 
-    paths = sorted(REPO.glob(args.traces))
+    candidates = Path(args.traces)
+    paths = [candidates] if candidates.is_absolute() else sorted(REPO.glob(args.traces))
     if not paths:
         print("no saved traces matching", args.traces)
         return 1
 
     baseline = terrain_verifier.baseline_outcome()
     total, equal = 0, 0
+    live_values: list[float] = []
     for path in paths:
-        for line in path.read_text().splitlines():
+        if path.suffix == ".zst":
+            import io
+            import zstandard
+
+            with zstandard.ZstdDecompressor().stream_reader(io.BytesIO(path.read_bytes())) as reader:
+                text = reader.read().decode()
+        else:
+            text = path.read_text()
+        for line in text.splitlines():
             if not line.strip():
                 continue
             episode = json.loads(line)
@@ -80,6 +90,8 @@ def main() -> int:
                     verdict = terrain_verifier.evaluate({"calculator.py": max(blocks, key=len)}, baseline)
                     replayed = terrain_verifier.REWARDS["target_fix_fraction"](verdict)
                 total += 1
+                if live is not None:
+                    live_values.append(live)
                 same = live is not None and abs(live - replayed) < 1e-9
                 equal += int(same)
                 print(
@@ -101,8 +113,12 @@ def main() -> int:
     print("\ntraces replayed=%d equal=%d" % (total, equal))
     ok = total > 0 and equal == total and pos == 1.0
     print("Phase 1B executing replay:", "PASS" if ok else "FAIL")
-    print("note: the live equality is 0==0 (truncated reply); the positive control is what")
-    print("      shows the replay path can produce a non-zero score.")
+    if any(abs(v) > 0 for v in live_values):
+        print("note: the live equality is on a NON-ZERO reward, so the executing replay path")
+        print("      is exercised end to end rather than merely matching at zero.")
+    else:
+        print("note: the live equality is 0==0 (a truncated reply); the positive control is")
+        print("      what shows the replay path can produce a non-zero score.")
     return 0 if ok else 1
 
 

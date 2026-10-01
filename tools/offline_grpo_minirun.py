@@ -61,13 +61,14 @@ HELD_OUT_PROMPTS = [
 
 def held_out_scores(model, tokenizer, device):
     """Protocol-fixed held-out evaluation: always LCS plus task success."""
-    total, exact = 0.0, 0
+    total, exact, bodies = 0.0, 0, []
     for prompt in HELD_OUT_PROMPTS:
         target = target_for(prompt)
         body = parse_body(generate(model, tokenizer, prompt, device, temperature=0.0))
         total += lcs(body, target)
         exact += int(body == target)
-    return total / len(HELD_OUT_PROMPTS), exact
+        bodies.append({"prompt": prompt, "target": target, "body": body})
+    return total / len(HELD_OUT_PROMPTS), exact, bodies
 
 
 def main():
@@ -90,14 +91,21 @@ def main():
     optimiser = torch.optim.AdamW(trainable, lr=args.lr)
 
     history = []
-    held_lcs, held_exact = held_out_scores(model, tokenizer, device)
+    held_lcs, held_exact, held_bodies = held_out_scores(model, tokenizer, device)
     print(
         "reward=%-9s adapter=%s tensors=%d | step 0 held lcs=%.3f exact=%d/%d"
         % (args.reward, args.adapter, loaded, held_lcs, held_exact, len(HELD_OUT_PROMPTS)),
         flush=True,
     )
     history.append(
-        {"step": 0, "train_reward": None, "loss": None, "held_lcs": held_lcs, "held_exact": held_exact}
+        {
+            "step": 0,
+            "train_reward": None,
+            "loss": None,
+            "held_lcs": held_lcs,
+            "held_exact": held_exact,
+            "held_bodies": held_bodies,
+        }
     )
 
     for step in range(1, args.steps + 1):
@@ -134,7 +142,7 @@ def main():
         optimiser.step()
         changed = sum(1 for p in trainable if (p.detach() - before[id(p)]).abs().sum().item() > 0)
 
-        held_lcs, held_exact = held_out_scores(model, tokenizer, device)
+        held_lcs, held_exact, held_bodies = held_out_scores(model, tokenizer, device)
         train_reward = sum(group_means) / len(group_means)
         print(
             "reward=%-9s step %d/%d train=%.3f loss=%+.4f grads=%d/%d delta=%d | held lcs=%.3f exact=%d/%d"
@@ -160,6 +168,7 @@ def main():
                 "loss": loss.item(),
                 "held_lcs": held_lcs,
                 "held_exact": held_exact,
+                "held_bodies": held_bodies,
             }
         )
 

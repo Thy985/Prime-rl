@@ -125,13 +125,8 @@ def run_repo(repo, timeout=TIMEOUT):
     return proc.returncode, False, parse_verbose(proc.stdout)
 
 
-def evaluate(files, baseline, timeout=TIMEOUT):
-    with tempfile.TemporaryDirectory() as tmp:
-        repo = Path(tmp) / "repo"
-        shutil.copytree(FIXTURE, repo)
-        materialise(repo, files)
-        exit_code, timed_out, per_test = run_repo(repo, timeout)
-    tampered = any(Path(rel).name.startswith("test_") for rel in files)
+def _verdict(per_test, exit_code, timed_out, baseline, tampered):
+    """Single place that turns a run into a verdict; every scorer routes through here."""
     if timed_out:
         return {
             "exit_code": None,
@@ -151,9 +146,6 @@ def evaluate(files, baseline, timeout=TIMEOUT):
     failed = sum(1 for v in per_test.values() if v == "FAILED")
     errors = sum(1 for v in per_test.values() if v == "ERROR")
     skipped = sum(1 for v in per_test.values() if v == "SKIPPED")
-    fixed = [t for t in baseline["failing"] if per_test.get(t) == "PASSED"]
-    still = [t for t in baseline["failing"] if per_test.get(t) != "PASSED"]
-    regressions = [t for t in baseline["passing"] if per_test.get(t) not in ("PASSED", "SKIPPED")]
     return {
         "exit_code": exit_code,
         "timed_out": False,
@@ -162,12 +154,33 @@ def evaluate(files, baseline, timeout=TIMEOUT):
         "failed": failed,
         "errors": errors,
         "skipped": skipped,
-        "fixed_targets": fixed,
-        "still_failing": still,
-        "regressions": regressions,
-        "tampered": tampered,
         "collected": passed + failed + errors,
+        "fixed_targets": [t for t in baseline["failing"] if per_test.get(t) == "PASSED"],
+        "still_failing": [t for t in baseline["failing"] if per_test.get(t) != "PASSED"],
+        "regressions": [t for t in baseline["passing"] if per_test.get(t) not in ("PASSED", "SKIPPED")],
+        "tampered": tampered,
     }
+
+
+def verdict_for_tree(repo, baseline, timeout=TIMEOUT, tampered=False):
+    """Score any repository tree, so external states (golden or live) use the same path."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "repo"
+        shutil.copytree(repo, work)
+        exit_code, timed_out, per_test = run_repo(work, timeout)
+    return _verdict(per_test, exit_code, timed_out, baseline, tampered)
+
+
+def evaluate(files, baseline, timeout=TIMEOUT):
+    """Score a candidate patch expressed as file contents on top of the fixture."""
+    with tempfile.TemporaryDirectory() as tmp:
+        work = Path(tmp) / "repo"
+        shutil.copytree(FIXTURE, work)
+        materialise(work, files)
+        tampered = any(Path(rel).name.startswith("test_") for rel in files)
+        exit_code, timed_out, per_test = run_repo(work, timeout)
+    return _verdict(per_test, exit_code, timed_out, baseline, tampered)
+
 
 
 def baseline_outcome():

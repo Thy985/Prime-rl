@@ -249,3 +249,21 @@ reply, which is what the executing reward re-applies) is written by the
 The 0.6B scores 0 because it exhausts the 2048-token cap without emitting a
 complete fenced file (`truncated: true`, `output_tokens: 2048`). This is the
 expected capability boundary, not a chain failure; capability probing is Phase 3.
+
+### Phase 1B acceptance: satisfied, with a stated caveat
+
+Full `traces.jsonl` is persisted by the `vf-eval` path
+(`outputs/swe-lab--primeintellect--qwen3-0.6b--null--73f8f523/traces.jsonl`), and
+`tools/swe_lab/replay_executing.py` re-derives the reward from the saved trace:
+
+    trace=53cdd79dc617 blocks=0 recorded=0.000 replayed=0.000 -> EQUAL
+    positive control (golden reply): replayed=1.000 -> OK
+    Phase 1B executing replay: PASS
+
+**Caveat, deliberately recorded:** the live equality is `0 == 0`, because the 0.6B
+reply was truncated before it emitted a complete fenced block. A replay path that
+was broken and always returned 0 would also "match". The positive control is what
+makes the evidence non-vacuous: substituting the known-correct repair for the same
+trace re-derives `1.000`. A stronger test needs a trace whose live reward is
+non-zero, which needs a model that can actually solve the task (Phase 3, or a
+larger model), not a change to the harness.

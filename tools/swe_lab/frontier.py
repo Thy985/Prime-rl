@@ -42,6 +42,11 @@ from swe_lab.taskset import SweLabConfig, SweLabTaskset, parse_proposals
 
 FAILURES = ("no_proposal", "invalid_syntax", "regression", "partial", "no_progress")
 
+# An episode whose request errored is NOT a model failure. Counting it as one
+# understates the solve rate, so invalid episodes are excluded from the
+# denominator and reported separately as a reliability figure.
+INVALID_STOPS = ("error",)
+
 
 def read_traces(run_dir: Path) -> list[dict]:
     traces = []
@@ -118,19 +123,25 @@ def main() -> int:
 
     summary = {}
     print("run:", run_dir.name)
-    print("%-24s %3s %7s %8s %8s  %s" % ("tier", "n", "solve", "rescored", "recorded", "failure mixture"))
+    print("%-24s %3s %6s %6s %7s %8s  %s"
+          % ("tier", "n", "valid", "error", "solve", "rescored", "failure mixture (valid only)"))
     for tier in sorted(per_tier):
         rows = []
+        invalid = 0
         for trace in per_tier[tier]:
             files = ((trace.get("task") or {}).get("data") or {}).get("files") or {}
             reply = last_reply(trace)
+            recorded = recorded_reward(trace)
+            if trace.get("stop_condition") in INVALID_STOPS or recorded is None or not reply.strip():
+                invalid += 1
+                continue
             task = tasks.get(tier)
             verdict = task._score(reply) if task else None
             reward = terrain.REWARDS["target_fix_fraction"](verdict) if verdict else 0.0
             rows.append(
                 {
                     "reward": reward,
-                    "recorded": recorded_reward(trace),
+                    "recorded": recorded,
                     "failure": None if reward >= 1.0 else classify(reply, files, verdict, reward),
                 }
             )
@@ -139,27 +150,38 @@ def main() -> int:
         for row in rows:
             if row["failure"]:
                 mixture[row["failure"]] += 1
+        total = len(rows) + invalid
         print(
-            "%-24s %3d %7s %8.3f %8.3f  %s"
+            "%-24s %3d %6d %6d %7s %8.3f  %s"
             % (
                 tier,
+                total,
                 len(rows),
-                "%d/%d" % (solved, len(rows)),
-                sum(row["reward"] for row in rows) / len(rows),
-                sum((row["recorded"] or 0.0) for row in rows) / len(rows),
+                invalid,
+                "%d/%d" % (solved, len(rows)) if rows else "n/a",
+                sum(row["reward"] for row in rows) / len(rows) if rows else 0.0,
                 ", ".join("%s=%d" % item for item in sorted(mixture.items())) or "-",
             )
         )
         summary[tier] = {
-            "n": len(rows),
-            "solve_rate": solved / len(rows),
-            "mean_rescored": sum(row["reward"] for row in rows) / len(rows),
-            "mean_recorded": sum((row["recorded"] or 0.0) for row in rows) / len(rows),
+            "n": total,
+            "n_valid": len(rows),
+            "n_invalid": invalid,
+            "solve_rate": solved / len(rows) if rows else None,
+            "mean_rescored": sum(row["reward"] for row in rows) / len(rows) if rows else None,
             "failures": dict(mixture),
         }
 
-    unsolved = [tier for tier in sorted(summary) if summary[tier]["solve_rate"] < 1.0]
-    print("\nfrontier (first unsolved tier):", unsolved[0] if unsolved else "none, all tiers solved")
+    threshold = 0.5
+    unsolved = [
+        tier for tier in sorted(summary)
+        if summary[tier]["solve_rate"] is not None and summary[tier]["solve_rate"] < threshold
+    ]
+    print("\nfrontier (first tier below %.0f%% valid solve rate):" % (threshold * 100),
+          unsolved[0] if unsolved else "none")
+    for tier in sorted(summary):
+        if summary[tier]["solve_rate"] == 1.0:
+            print("  note: %s solved every valid attempt" % tier)
     Path(args.out).write_text(
         json.dumps({"run": run_dir.name, "tiers": summary, "frontier": unsolved[:1]}, indent=1)
     )

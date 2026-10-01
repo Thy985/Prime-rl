@@ -6,10 +6,14 @@
 #   PYTHONPATH=tools/swe_lab_env DUMMY_API_KEY="$TENXUN_API_KEY" \
 #   uv run eval @ tools/swe_lab/eval.toml \
 #     --model "$TENXUN_MODEL" --client.base_url "$TENXUN_BASE_URL"
+#
+# num_examples = one episode per tier; group_size = independent attempts per tier.
+# Temperature is non-zero on purpose: at 0.0 the attempts are identical and the
+# extra samples carry no information about solve rate.
 
 model = "Tenxun/Deepseek-v4-flash"
 num_examples = 3
-group_size = 1
+group_size = 8
 
 [client]
 base_url = "http://172.20.208.1:20128/v1"
@@ -17,7 +21,7 @@ api_key_var = "DUMMY_API_KEY"
 
 [sampling]
 max_completion_tokens = 8192
-temperature = 0.0
+temperature = 0.7
 
 [[source]]
 name = "swe-lab"

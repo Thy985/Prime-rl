@@ -172,16 +172,23 @@ def main() -> int:
             "failures": dict(mixture),
         }
 
-    threshold = 0.5
+    # The frontier is where the model stops being RELIABLE, not where it drops below
+    # an arbitrary half. With few attempts a 50% cut-off hides a real cliff, and the
+    # difference between 4/8 and 8/8 is the difference between unusable and dependable.
     unsolved = [
         tier for tier in sorted(summary)
-        if summary[tier]["solve_rate"] is not None and summary[tier]["solve_rate"] < threshold
+        if summary[tier]["solve_rate"] is not None and summary[tier]["solve_rate"] < 1.0
     ]
-    print("\nfrontier (first tier below %.0f%% valid solve rate):" % (threshold * 100),
-          unsolved[0] if unsolved else "none")
+    print("\nfrontier (first tier not solved on every valid attempt):", unsolved[0] if unsolved else "none")
     for tier in sorted(summary):
-        if summary[tier]["solve_rate"] == 1.0:
-            print("  note: %s solved every valid attempt" % tier)
+        rate = summary[tier]["solve_rate"]
+        if rate == 1.0:
+            print("  %-24s reliable (all %d valid attempts solved)" % (tier, summary[tier]["n_valid"]))
+        elif rate is not None:
+            print("  %-24s unreliable: %.0f%% of %d valid attempts" % (tier, rate * 100, summary[tier]["n_valid"]))
+    print("\ncaveat: these are single-run rates at n=%d; run-to-run spread at this n is large,"
+          % max(s["n_valid"] or 0 for s in summary.values()))
+    print("        so treat the ordering as the result and the exact rate as provisional.")
     Path(args.out).write_text(
         json.dumps({"run": run_dir.name, "tiers": summary, "frontier": unsolved[:1]}, indent=1)
     )

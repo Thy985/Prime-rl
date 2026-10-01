@@ -7,6 +7,13 @@
 #   uv run eval @ tools/swe_lab/eval.toml \
 #     --model "$TENXUN_MODEL" --client.base_url "$TENXUN_BASE_URL"
 #
+# REQUIRED for external routers: pin concurrency below the provider's cap.
+#   --concurrency.min-inflight 4 --concurrency.max-inflight 4
+# prime-rl eval pins in-flight episodes at 128 by default; when the upstream allows
+# fewer (this router allows 6) the excess requests fail with
+# "429 concurrent limit exceeded" and the errored episodes are silently scored as
+# model failures unless they are excluded.
+#
 # num_examples = one episode per tier; group_size = independent attempts per tier.
 # Temperature is non-zero on purpose: at 0.0 the attempts are identical and the
 # extra samples carry no information about solve rate.

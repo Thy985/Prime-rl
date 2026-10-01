@@ -1,175 +1,202 @@
-# SWE Agent Environment / Harness — plan and roadmap
+# SWE Agent Environment / Harness — plan and roadmap (spec level)
 
-Scope: build the *environment, verifier and trajectory infrastructure* for a
-stateful, tool-using agent. This is the successor to the reverse-text lab.
+Positioning, after review: **do not rebuild Verifiers.** `verifiers` is already
+vendored in this repo at `deps/verifiers` (0.3.2.dev137) and `verifiers/v1`
+already owns Task / Taskset / Harness / Runtime / Trace / Episode. This project
+builds the **experiment-control and audit layer** on top of those abstractions,
+and validates how they land on a real agent task.
 
 ## 0. Where we are
 
-Reverse-text is closed and graduated. What it produced, and what transfers:
+Reverse-text is closed. What transfers:
 
 | Result | Status |
 | --- | --- |
 | RL plumbing (sampler -> verifier -> reward -> advantage -> LoRA -> delta) | verified on one GPU |
-| SFT produced a capability (0/18 -> 7/18 exact on short strings) | verified |
-| Reward ablation V1 lcs / V2 pos / V3 lcs+exact-bonus | done, at a non-destructive lr |
-| "Reward rises + transfers" (Experiments A/B) | **RETRACTED** — protocol bug |
+| SFT produced a capability (0/18 -> 7/18 exact, short strings) | verified |
+| Reward ablation V1 lcs / V2 pos / V3 lcs+exact-bonus | done at a non-destructive lr |
+| "Reward rises and transfers" (Experiments A/B) | **RETRACTED** — protocol bug |
 | "Every reward destroys the capability" (lr 1e-4) | **RETRACTED** — optimiser artifact |
 
-Four lessons that must be carried into this phase, because each one cost a wrong
-conclusion:
+Four lessons, each of which already cost a wrong conclusion:
 
-1. **Protocol invariance.** Training, inference and offline evaluation must share
-   one entry point for tokenizer, prompt serialisation, extraction, generation
-   config and verifier version. A mismatched prompt format produced a completely
-   wrong experimental conclusion.
-2. **Verify the verifier before anything else.** Corpus/terrain audits first;
-   training only after the signal is shown to be sound.
-3. **Offline ordering metrics do not predict learning.** LCS was the best graded
-   shaper offline and yet transferred worst in GRPO.
-4. **Establish a non-destructive update regime first.** Until that exists, a
-   reward ablation is uninterpretable.
+1. **Protocol invariance** — one entry point for prompt serialisation, generation
+   config and verifier version across training/inference/eval.
+2. **Verify the verifier first** — terrain/corpus audits before any training.
+3. **Offline ordering metrics do not predict learning.**
+4. **Establish a non-destructive update regime first**, or an ablation is
+   uninterpretable.
 
-SWE terrain so far (`tools/swe_lab/`): a two-defect fixture with a structured
-verdict (per-test, fixed_targets, regressions, tampered, timed_out) and an audit
-over ten repairs. Headline: **"the test suite is green" is not a verifier** —
-scoring the pytest exit code or raw pass fraction pays a test-tampering repair
-1.000 while a genuine partial fix scores 0.571.
+SWE terrain so far (`tools/swe_lab/terrain.py`): two seeded defects, a structured
+verdict (per_test, fixed_targets, regressions, tampered, timed_out) and a
+ten-repair audit. Headline: **"the test suite is green" is not a verifier** —
+exit-code and raw-pass-fraction rewards pay a tampering repair 1.000 while a
+genuine partial fix scores 0.571.
 
 ## 1. Objective and hard boundary
 
-Objective: make **one agent episode** faithfully convertible into a record that is
-(1) replayable, (2) scored by an audited verifier, and (3) consumable as a
-training example.
+Objective: make **one agent episode faithfully convertible into a record** that is
+replayable, scored by an audited verifier, and consumable as a training example.
 
-Hard boundary, recorded rather than fought: **8 GB single GPU + a 0.6B base model
-cannot train a real SWE agent.** A 0.6B policy scores ~0 on any genuine SWE task.
-So this phase is **environment / evaluation / data infrastructure**, not "SWE RL".
-Any training on this box is limited to SFT/distillation on reference trajectories.
-RL on the harness is gated on a larger machine (Phase 4 decision gate).
+Hard boundaries, recorded rather than fought:
+
+- **8 GB single GPU + a 0.6B base cannot train a real SWE agent.** This phase is
+  environment / evaluation / data infrastructure. Any training here is limited to
+  SFT/distillation on reference trajectories; RL on the harness is gated on a
+  larger machine (Phase 4).
+- **No container runtime on this box** (docker/podman/apptainer absent, daemon
+  unreachable), and every real built-in harness declares `NEEDS_CONTAINER = True`
+  (only `bash`/`null` override to False). This gates Phase 1B; see 2.2.
 
 ## 2. Architecture
 
-Five layers, each replaceable without touching the ones above it:
+### 2.1 Three tiers of fact — never a second source of truth
 
-    L5 analysis/scoring     offline, WSL          verdict stats, reward audit
-    L4 adapter + schema     offline, WSL          stream-json -> trajectory schema
-    L3 agent runner         Windows (see 3.1)     claude / codex / future local policy
-    L2 verifier             offline, WSL          terrain verdict + audited reward
-    L1 environment          Windows sandbox dir   repo copy, test runner, timeout
+    raw agent/runtime stream        RAW FACT        archived verbatim, never parsed twice
+            |
+    verifiers.v1 Trace / Episode    SEMANTIC FACT    task, group, run/work, policy,
+                                                     runtime, timing, tool defs, messages
+            |
+    SWE experiment record           INDEX/ANALYSIS   only what the layers above do not
+                                                     carry: tree hashes, verdict, reward
 
-Deployment reality found by measurement:
+The experiment record is an **index over the Episode**, not a competing trace. It
+must be regenerable from archived artifacts at any time; if it ever disagrees with
+the Episode, the Episode wins. This is the rule that prevents the reverse-text
+failure of two slightly different facts leading to protocol tinkering.
 
-- `claude` in WSL is a **Windows PE binary** (`bin/claude.exe`) started through WSL
-  interop, so its tools run as **Windows** processes. A WSL path is only a UNC path
-  to it.
-- `codex` cannot run in WSL at all (its shim needs `node`; WSL has none).
-- Windows has python 3.12 (uv-managed) but **no pytest**; `uv` is present.
-- The WSL repo is reachable from Windows over `\\wsl.localhost\...`.
+What verifiers v1 already provides (so it must NOT be re-implemented): `TaskData`
+with `prompt/system_prompt/workdir/network_allow/network_block/artifacts` and
+`TaskTimeout{setup,agent,finalize,scoring}` and `TaskResources`; `Task.hash()`;
+`Taskset.load()`; `Harness` with capability flags (`NEEDS_CONTAINER`,
+`EXECUTES_CODE`, `SUPPORTS_RESUME`, `SUPPORTS_TOOL_INTERCEPTION`, `APPENDS_SYSTEM_PROMPT`)
+and `setup/launch/metrics/resume/cleanup`; `Runtime` implementations
+(subprocess, container, docker, modal, prime); `Trace` with `Timing`
+(boot/setup/agent{model,harness}/finalize/scoring), `Error`, `AgentInfo`,
+`TraceTask`; `Episode` as a durable artifact carrying env, task, group, run/work
+and policy span. Built-in harnesses include `claude_code`, `codex`,
+`mini_swe_agent`, `terminus_2`, `bash`, `null`.
 
-Therefore, for now: **the agent runs on the Windows side against a Windows-path
-sandbox, and scoring runs in WSL.** That boundary is the single largest source of
-potential measurement contamination in this design, which is why the adapter and
-the environment fingerprint (below) are mandatory rather than optional.
+### 2.2 Deployment reality (measured, not assumed)
 
-### 2.1 Deployment routes
+- `claude` in WSL is a **Windows PE binary** started through WSL interop, so its
+  tools run as Windows processes; a WSL path is only a UNC path to it.
+- `codex` cannot run in WSL at all (shim needs `node`; WSL has none).
+- `ClaudeCodeHarness` does **not** shell out to `claude -p`: it installs
+  `@anthropic-ai/claude-code` + `@anthropic-ai/claude-agent-acp` via `npm install`
+  **inside the runtime** and drives Claude over **ACP**.
+- It inherits `NEEDS_CONTAINER = True`: on a host/subprocess runtime it would leak
+  host state (auth, config, processes) in both directions.
+- Windows has python 3.12 (uv-managed) but no pytest; `uv` is present.
 
-- **Route A (use now):** sandbox at `D:\swe_runs\<id>`; test runner via
-  `uv run --with pytest pytest`; agent driven non-interactively; final repo state
-  copied back to WSL for scoring. Zero changes to the training environment.
-- **Route C (adopt if SWE becomes the main line):** install node in WSL and
-  `npm i -g @anthropic-ai/claude-code` to get a **native Linux** claude, so agent,
-  test runner, verifier and a future local vLLM policy all live in one
-  environment with no path translation.
+Consequence: the canonical path (built-in `claude_code` harness) is **blocked on
+this box until a container runtime exists**. Two unblocked routes:
 
-Decision trigger for C: the first phase that needs many runs (Phase 2 or later),
-or the first time a Windows/WSL discrepancy is suspected of changing a result.
-Maintaining a translation layer across two OSes is exactly the class of bug that
-invalidated Experiments A/B.
+- **Route G (do first, no container, no API cost):** Golden Episode + the whole
+  closure on the `bash`/`null` harness with the **subprocess** runtime, which is
+  deterministic and exercises Task -> Runtime -> Episode/Trace -> record ->
+  verifier -> verdict -> replay.
+- **Route A (temporary, only if a live episode is needed before a container):**
+  drive `claude.exe` on the Windows side against a Windows-path sandbox and treat
+  it as a **stand-in harness** behind the same interface, clearly marked as such.
+- **Route C (the real fix):** provide docker in WSL2, then use the built-in
+  `claude_code` harness and delete the stand-in. Preferred as soon as SWE becomes
+  the main line.
 
-## 3. Trajectory schema (the central deliverable)
+### 2.3 What "Environment" means here
 
-One record per episode, append-only, with the raw agent stream preserved verbatim
-and never mutated:
+An environment is not a directory. It is:
 
-    run_id            stable id
-    task_id           which fixture/tier
-    agent             {name, version, model}
-    env_fingerprint   {os, python, pytest, git, fixture hash, tool policy}
-    started_at, duration_s, exit_status
-    steps[]           {index, kind: message|tool_call|tool_result,
-                       tool, args, observation, files_touched, cwd}
-    diff              final unified diff against the task baseline
-    final_state_hash  content hash of the sandbox tree
-    verdict           {per_test, fixed_targets, regressions, tampered,
-                       timed_out, exit_code}
-    reward            {target_fix_fraction, shaped}
-    raw_ref           path to the untouched stream-json
+    initial state     repository, files, dependencies, services
+    action interface  shell, file editing, tools exposed to the model
+    transition        action -> changed state
+    observation       stdout/stderr, files, test results
+    terminal          success, failure, timeout, budget exhaustion
 
-Invariants: every record carries the env fingerprint (so two numbers from
-different protocols are never compared); the verdict is computed from the
-**final repository state**, never from the agent's own claim of success; the raw
-stream is the ground truth for the step list.
+## 3. SWE experiment record (index layer)
+
+    run_id, task_id, task_hash
+    env_fingerprint   os, path_policy, shell, locale, line_endings, python,
+                      pytest, git, agent, harness, runtime, fixture_hash,
+                      task_hash, tool_policy, network_policy, workdir
+    episode_ref       pointer to the verifiers Episode (semantic fact)
+    raw_ref           pointer to the untouched raw stream
+    initial_state_hash, final_state_hash, diff
+    verdict           per_test, fixed_targets, regressions, tampered, timed_out
+    reward            target_fix_fraction, shaped
+    timing/tokens     copied from Trace.Timing, never recomputed
+
+`initial_state_hash` is mandatory: `diff = final - baseline` is meaningless without
+proof of the baseline the episode actually started from. It was missing from the
+first draft.
+
+Invariants: verdict is computed from the **final repository state**, never from the
+agent's self-report; every record carries `env_fingerprint` so two numbers from
+different protocols are never compared; the raw stream is never mutated.
 
 ## 4. Roadmap
 
 **Phase 0 — terrain and audit. DONE.**
-Two-defect fixture, structured verdict, ten-repair audit, five candidate rewards.
-Acceptance met: naive "tests pass" rewards are proven exploitable; two rewards
-pass all seven properties.
 
-**Phase 1 — adapter and one end-to-end episode.**
-Do: trajectory schema; stream-json -> schema adapter; one sandboxed agent run;
-verdict + reward computed from the final state.
-Acceptance: exactly one schema-valid record exists; its verdict is reproducible by
-re-running the verifier on the stored final state; raw stream archived; the
-agent's tamper behaviour is recorded either way.
-Deliverable: `tools/swe_lab/schema.py`, `tools/swe_lab/adapters/claude_stream.py`,
-one record under `outputs/swe_runs/`.
+**Phase 1A — environment contract + Golden Episode.**
+Do: implement the fixture as a verifiers `Taskset`/`Task`; `run_dir` with
+`initial/ work/ final/ task.json env_fingerprint.json`; record
+`initial_state_hash`; then build a **Golden Episode** — a known task, a known
+correct repair, a known final state and a known verdict — and require
+adapter -> schema -> verifier -> reward to reproduce it exactly.
+Acceptance: the golden record round-trips; the verifier reproduces the known
+verdict; a deliberately corrupted final state is detected (negative control).
+Rationale: this is the blame-isolation boundary. Without it, a live failure cannot
+be attributed to agent, adapter, environment or verifier — the exact trap already
+paid for once.
+
+**Phase 1B — one live episode + replay closure.**
+Do: 1 task x 1 agent x 1 harness = 1 episode, on the built-in harness where a
+runtime allows, otherwise the marked stand-in. Then: live verdict, then rescore
+from the archived final state, and require **live verdict == replayed verdict**.
+Acceptance: the full `run_dir` exists (task.json, env_fingerprint.json,
+raw_stream.jsonl, trajectory/record, initial_state.json, final_state.json,
+diff.patch, verdict.json, reward.json) and the two verdicts are identical.
 
 **Phase 2 — difficulty ladder.**
-Do: at least three tiers — single-file two-defect (have), multi-file coordinated
-change, and long-horizon with a regression trap and a misleading test. Each tier
-ships baseline repairs (no-op / partial / full / regression / tamper) so the
-reward gradient is audited **per tier**, not just once.
-Acceptance: for every tier, the terrain audit passes; a no-op scores at the floor
-and the tamper repair is not paid.
-Reasoning: two bugs is a ceiling test for a frontier agent, so the tier ladder is
-what turns this from plumbing into a capability probe.
+Tiers: single-file two-defect (have), multi-file coordinated change, long-horizon
+with a regression trap and a misleading test. Every tier fixes an **action budget,
+time budget and tool budget**, so a harder tier is genuinely harder rather than
+just given more time. Audits are per tier.
 
-**Phase 3 — reference trajectories and the frontier.**
-Do: N runs per tier with the reference agent; record solve rate, steps, and where
-it degrades. Keep trajectories as SFT data.
-Acceptance: a solve-rate curve across tiers, every record schema-valid and
-verifier-scored, and a written statement of which tier is the current frontier.
+**Phase 3 — reference trajectories; harness evaluation begins here.**
+Fix model, taskset, environment, verifier and budgets; vary the harness
+(Harness A vs B) over 10-30 tasks; measure success, partial, regression, tamper,
+timeout, steps, tokens, latency, recovery.
+Outputs stay split: **raw trajectories** and **curated SFT views** are different
+artifacts. A trajectory is not a training example: it passes through
+filter -> turn selection -> masking -> training example, and advertised tool
+definitions belong to that transformation, not to the record.
 
-**Phase 4 — decision gate (do not pre-commit).**
-If a larger GPU is available: RL on the harness with the audited reward, reusing
-the reverse-text discipline (non-destructive regime first, reward ablation only
-after). If not: SFT/distillation on the Phase 3 reference trajectories for the
-local model, with protocol-invariant evaluation. Recording "cannot train here" is
-an acceptable outcome; forcing it is not.
+**Phase 4 — decision gate (do not pre-commit).** Larger GPU: RL on the harness
+with the audited reward, reusing reverse-text discipline. Otherwise
+SFT/distillation only. "Cannot train here" is an acceptable recorded outcome.
 
-**Phase 5 — environment generalisation.**
-Tool misuse, partial credit spanning files, longer horizons, and a second task
-family (so the verifier is not fitted to one fixture).
+**Phase 5 — environment generalisation.** Tool misuse, cross-file partial credit,
+longer horizons, a second task family.
 
 ## 5. Anti-scope-creep rules
 
 1. One environment at a time; no new tier until its verifier audit passes.
-2. The agent only ever touches a sandbox copy. Never the working repo.
-3. Protocol/environment fingerprint on every record; never compare across versions.
+2. The agent only ever touches a sandbox copy, never the working repo.
+3. Environment fingerprint on every record; never compare across versions.
 4. Any reward used for training must have passed the terrain audit first.
 5. Verdicts come from the final repository state, never from agent self-report.
-6. Record resource boundaries instead of forcing the full chain.
+6. The Episode is the semantic fact; the experiment record is derived and
+   regenerable. Never let a second trace become authoritative.
+7. Record resource boundaries instead of forcing the full chain.
 
 ## 6. Open questions
 
-- Route A vs Route C (see 2.1) — A is fine for Phase 1; the trigger for C is a
-  high run count or a suspected cross-OS discrepancy.
-- Reference agent: claude only, codex only, or both (two ceilings is better for
-  calibration, but doubles cost and needs the codex-on-Windows path).
-- Whether to add an explicit **tamper-pressure** task variant ("make the suite
-  pass") to harvest genuine reward-hacking trajectories rather than hand-written
-  ones. Recommended: yes, as a labelled negative class, in Phase 3.
-- pytest on the Windows side: install once into the uv-managed environment, or
-  use `uv run --with pytest` per run (slower, no persistent change).
+- **Container runtime** (docker in WSL2) — required for the canonical
+  `claude_code` harness; without it Phase 1B runs on Route A or Route G only.
+- Reference agent for Phase 3: `claude_code` only, or also `codex` (two ceilings is
+  better calibration, doubles cost).
+- Tamper-pressure task variant ("make the suite pass") to harvest genuine
+  reward-hacking trajectories as a labelled negative class. Recommended.
+- pytest on the Windows side: install once, or `uv run --with pytest` per run.

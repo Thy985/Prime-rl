@@ -1,151 +1,171 @@
-"""Offline multi-step GRPO mini-run with a held-out eval (single GPU, no vLLM).
+"""Offline multi-step GRPO on a fixed SFT checkpoint: one reward at a time.
 
-One run answers both experiments:
-  Experiment A (RL held-out): does the GRPO reward rise leak beyond the few
-    training prompts? We eval on `--held-out` prompts the LoRA never saw.
-  Experiment B (reward vs exact): each step we report mean LCS (the verifier
-    proxy reward) AND exact% (task success: <reversed_text> body ==
-    prompt.rstrip()[::-1]) on the held-out set, to see if proxy/reward climbs
-    also raise true task success.
+Only the reward function varies; checkpoint, taskset, sampler, group size,
+steps, lr, temperature and seed are held fixed, so a comparison across
+--reward values is a reward ablation rather than a protocol change.
 
-Loop (offline, one GPU):
-  step k:
-    for each train prompt, sample group_size rollouts (local sampler, temp)
-    verifier_reward -> group relative advantage adv=(r-mean)/(std+eps)
-    objective loss = -mean(adv.detach()*log p(completion))
-    one AdamW step on the project LoRA params
-  then greedy-eval the held-out prompts with the SAME updated model.
+Train prompts come from the SFT task distribution and the held-out set is the
+disjoint remainder, so held-out exact measures transfer rather than
+memorisation. Prompt formatting, generation, extraction and verification all go
+through tools/eval_contract.py.
 
-usage: uv run python tools/offline_grpo_minirun.py \
-         --prompts hello world 'reverse this' 'fast cars' 'The quick' gradient \
-         --held-out goodbye training blocks tiny qwen --group-size 4 --steps 3
+usage: uv run python tools/offline_grpo_minirun.py --reward lcs_bonus \
+         --adapter outputs/short-ovf/adapter_step30 --steps 5
 """
 
 from __future__ import annotations
 
 import argparse
-import re
-from difflib import SequenceMatcher
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from prime_rl.configs.trainer import LoRAConfig
-from prime_rl.trainer.lora import apply_lora_to_model, get_lora_state
-from prime_rl.trainer.models.layers.lora import set_lora_num_tokens
+from eval_contract import (
+    build_reward,
+    completion_logprob,
+    generate,
+    generate_ids,
+    lcs,
+    load_model,
+    parse_body,
+    target_for,
+)
 
-BASE = "PrimeIntellect/Qwen3-0.6B"
-SYSTEM = ("Reverse the text character-by-character. "
-          "Put your answer in <reversed_text> tags.")
-TAG = re.compile(r"<reversed_text>(.*?)</reversed_text>", re.DOTALL)
-TARGETS = ["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"]
-
-
-def set_len(model, n, dev):
-    set_lora_num_tokens(torch.tensor([n], dtype=torch.int32, device=dev))
-
-
-def verifier_reward(prompt, completion):
-    m = TAG.search(completion)
-    body = m.group(1).strip() if m else ""
-    return SequenceMatcher(None, body, prompt.rstrip()[::-1]).ratio()
-
-
-def exact_match(prompt, completion):
-    m = TAG.search(completion)
-    return bool(m) and m.group(1).strip() == prompt.rstrip()[::-1]
-
-
-def sample(model, tokenizer, prompt, dev, max_new=24, temp=0.7):
-    ids = tokenizer(prompt, return_tensors="pt").input_ids.to(dev)
-    for _ in range(max_new):
-        set_len(model, ids.shape[1], dev)
-        with torch.no_grad():
-            logits = model(ids).logits[0, -1].float() / temp
-        nxt = torch.multinomial(torch.softmax(logits, dim=-1), 1).item()
-        ids = torch.cat([ids, torch.tensor([[nxt]], device=dev)], dim=1)
-    return tokenizer.decode(ids[0], skip_special_tokens=True)
+TRAIN_PROMPTS = [
+    "hello",
+    "world",
+    "reverse this",
+    "fast cars",
+    "abcdefghij",
+    "The quick",
+    "Qwen3 small",
+    "data science",
+    "my tiny text",
+    "nice job now",
+]
+HELD_OUT_PROMPTS = [
+    "few words here",
+    "abc def ghi",
+    "Test string",
+    "machine",
+    "short",
+    "primer-rl",
+    "lora",
+    "gradient",
+]
 
 
-def greedy_completion(model, tokenizer, prompt, dev, max_new=24):
-    ids = tokenizer(prompt, return_tensors="pt").input_ids.to(dev)
-    for _ in range(max_new):
-        set_len(model, ids.shape[1], dev)
-        with torch.no_grad():
-            nxt = model(ids).logits[0, -1].argmax(-1).item()
-        ids = torch.cat([ids, torch.tensor([[nxt]], device=dev)], dim=1)
-    return tokenizer.decode(ids[0], skip_special_tokens=True)
-
-
-def completion_logprob(model, tokenizer, text, dev):
-    ids = tokenizer(text, return_tensors="pt").input_ids.to(dev)
-    set_len(model, len(ids[0]), dev)
-    logits = model(ids).logits[:, :-1, :].float()
-    lp = torch.log_softmax(logits, dim=-1)
-    return lp[0].gather(1, ids[0, 1:].unsqueeze(1)).squeeze(1).sum()
-
-
-def build(lora_cfg, dev):
-    tok = AutoTokenizer.from_pretrained(BASE)
-    if tok.pad_token_id is None:
-        tok.pad_token_id = tok.eos_token_id
-    model = AutoModelForCausalLM.from_pretrained(BASE).to(torch.bfloat16).to(dev)
-    model.eval()
-    apply_lora_to_model(model, lora_cfg)
-    get_lora_state()
-    return model, tok
-
-
-def greedy_eval(model, tok, prompts, dev):
-    lcs = [verifier_reward(p, greedy_completion(model, tok, SYSTEM + "\n\n" + p, dev)) for p in prompts]
-    exact = sum(1 for p, r in zip(prompts, lcs) if exact_match(p, greedy_completion(model, tok, SYSTEM + "\n\n" + p, dev)))
-    return lcs, exact
+def held_out_scores(model, tokenizer, device):
+    """Protocol-fixed held-out evaluation: always LCS plus task success."""
+    total, exact = 0.0, 0
+    for prompt in HELD_OUT_PROMPTS:
+        target = target_for(prompt)
+        body = parse_body(generate(model, tokenizer, prompt, device, temperature=0.0))
+        total += lcs(body, target)
+        exact += int(body == target)
+    return total / len(HELD_OUT_PROMPTS), exact
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--prompts", nargs="*", default=["hello", "world", "reverse intro"])
-    ap.add_argument("--held-out", nargs="*", default=["goodbye", "blocks", "tiny", "squash"])
+    ap.add_argument("--reward", default="lcs", choices=["lcs", "pos", "lcs_bonus"])
+    ap.add_argument("--adapter", default="outputs/short-ovf/adapter_step30")
     ap.add_argument("--group-size", type=int, default=4)
-    ap.add_argument("--steps", type=int, default=4)
+    ap.add_argument("--steps", type=int, default=5)
     ap.add_argument("--lr", type=float, default=1e-4)
+    ap.add_argument("--temperature", type=float, default=0.7)
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
     torch.manual_seed(args.seed)
-    dev = torch.device("cuda")
-    lf = LoRAConfig(rank=16, alpha=32.0, dropout=0.0, target_modules=TARGETS)
-    model, tok = build(lf, dev)
+    device = torch.device("cuda")
+    model, tokenizer, loaded = load_model(device, args.adapter)
+    reward = build_reward(args.reward)
     trainable = [p for p in model.parameters() if p.requires_grad]
-    opt = torch.optim.AdamW(trainable, lr=args.lr)
+    optimiser = torch.optim.AdamW(trainable, lr=args.lr)
+
+    history = []
+    held_lcs, held_exact = held_out_scores(model, tokenizer, device)
+    print(
+        "reward=%-9s adapter=%s tensors=%d | step 0 held lcs=%.3f exact=%d/%d"
+        % (args.reward, args.adapter, loaded, held_lcs, held_exact, len(HELD_OUT_PROMPTS)),
+        flush=True,
+    )
+    history.append(
+        {"step": 0, "train_reward": None, "loss": None, "held_lcs": held_lcs, "held_exact": held_exact}
+    )
 
     for step in range(1, args.steps + 1):
-        flat, advs, group_means = [], [], []
-        for prompt in args.prompts:
-            rolls = [sample(model, tok, SYSTEM + "\n\n" + prompt, dev) for _ in range(args.group_size)]
-            rr = [verifier_reward(prompt, c) for c in rolls]
-            mean = sum(rr) / len(rr)
-            std = (sum((r - mean) ** 2 for r in rr) / len(rr)) ** 0.5 + 1e-4
-            for c, r in zip(rolls, rr):
-                flat.append((prompt, SYSTEM + "\n\n" + prompt + "\n" + c, (r - mean) / std))
+        batch, advantages, group_means = [], [], []
+        for prompt in TRAIN_PROMPTS:
+            target = target_for(prompt)
+            entries = []
+            for _ in range(args.group_size):
+                ids, start = generate_ids(model, tokenizer, prompt, device, temperature=args.temperature)
+                body = parse_body(tokenizer.decode(ids[0, start:], skip_special_tokens=True))
+                entries.append((ids, start, reward(body, target)))
+            values = [entry[2] for entry in entries]
+            mean = sum(values) / len(values)
+            std = (sum((value - mean) ** 2 for value in values) / len(values)) ** 0.5 + 1e-4
+            batch.extend(entries)
+            advantages.extend((value - mean) / std for value in values)
             group_means.append(mean)
 
-        logprobs = torch.stack([completion_logprob(model, tok, txt, dev) for _, txt, _ in flat])
-        adv = torch.tensor([a for _, _, a in flat], dtype=torch.bfloat16, device=dev)
-        loss = -torch.mean(adv.detach() * logprobs)
-        opt.zero_grad()
-        before = {id(p): p.detach().clone() for p in trainable}
+        # Per-token normalisation, matching the token-count scale the prime-rl RL
+        # trainer uses (`rl_scale`), rather than an unweighted sum over tokens.
+        logprobs = torch.stack(
+            [
+                completion_logprob(model, ids, start, device) / max(1, ids.shape[1] - start)
+                for ids, start, _ in batch
+            ]
+        )
+        advantage = torch.tensor(advantages, dtype=torch.bfloat16, device=device)
+        loss = -torch.mean(advantage.detach() * logprobs)
+
+        optimiser.zero_grad()
+        before = {id(param): param.detach().clone() for param in trainable}
         loss.backward()
-        nz = sum(1 for p in trainable if p.grad is not None and p.grad.abs().sum().item() > 0)
-        opt.step()
+        grads = sum(1 for p in trainable if p.grad is not None and p.grad.abs().sum().item() > 0)
+        optimiser.step()
         changed = sum(1 for p in trainable if (p.detach() - before[id(p)]).abs().sum().item() > 0)
 
-        # Held-out greedy eval for Experiments A & B.
-        h_lcs, h_exact = greedy_eval(model, tok, args.held_out, dev)
-        print(f"step={step}/{args.steps} train_reward={sum(group_means)/len(group_means):.3f} "
-              f"loss={loss.item():.4f} grads={nz}/{len(trainable)} | "
-              f"held({len(args.held_out)}) mean_lcs={sum(h_lcs)/len(h_lcs):.3f} exact={h_exact}/{len(args.held_out)}",
-              flush=True)
+        held_lcs, held_exact = held_out_scores(model, tokenizer, device)
+        train_reward = sum(group_means) / len(group_means)
+        print(
+            "reward=%-9s step %d/%d train=%.3f loss=%+.4f grads=%d/%d delta=%d | held lcs=%.3f exact=%d/%d"
+            % (
+                args.reward,
+                step,
+                args.steps,
+                train_reward,
+                loss.item(),
+                grads,
+                len(trainable),
+                changed,
+                held_lcs,
+                held_exact,
+                len(HELD_OUT_PROMPTS),
+            ),
+            flush=True,
+        )
+        history.append(
+            {
+                "step": step,
+                "train_reward": train_reward,
+                "loss": loss.item(),
+                "held_lcs": held_lcs,
+                "held_exact": held_exact,
+            }
+        )
+
+    if args.out:
+        Path(args.out).write_text(json.dumps({"reward": args.reward, "history": history}, indent=1))
+        print("wrote", args.out, flush=True)
 
 
 if __name__ == "__main__":

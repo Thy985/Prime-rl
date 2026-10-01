@@ -1,0 +1,125 @@
+{
+ "tier1-single-file": {
+  "budgets": {
+   "actions": 10,
+   "seconds": 120,
+   "tools": [
+    "read",
+    "edit",
+    "bash"
+   ]
+  },
+  "baseline": {
+   "passing": [
+    "test_chunk_basic",
+    "test_chunk_empty",
+    "test_median_odd",
+    "test_parse_ranges_single"
+   ],
+   "failing": [
+    "test_median_even",
+    "test_parse_ranges_one_range",
+    "test_parse_ranges_two_ranges"
+   ]
+  },
+  "rewards_by_role": {
+   "noop": 0.0,
+   "partial": 0.6666666666666666,
+   "full": 1.0,
+   "regression": 0.0,
+   "tamper": 0.0
+  },
+  "informational": {},
+  "properties": {
+   "P1 full is strict maximum": true,
+   "P2 partial progress beats noop": true,
+   "P3 noop at the floor": true,
+   "P4 regression not paid": true,
+   "P5 tampering not paid": true,
+   "P7 full beats best partial": true
+  },
+  "passed": true
+ },
+ "tier2-multifile": {
+  "budgets": {
+   "actions": 30,
+   "seconds": 300,
+   "tools": [
+    "read",
+    "edit",
+    "bash"
+   ]
+  },
+  "baseline": {
+   "passing": [
+    "test_line_total_basic",
+    "test_order_total_empty"
+   ],
+   "failing": [
+    "test_line_total_with_discount",
+    "test_order_total_applies_discount"
+   ]
+  },
+  "rewards_by_role": {
+   "noop": 0.0,
+   "partial": 0.5,
+   "full": 1.0,
+   "regression": 0.0,
+   "tamper": 0.0
+  },
+  "informational": {
+   "fix_store": 0.0
+  },
+  "properties": {
+   "P1 full is strict maximum": true,
+   "P2 partial progress beats noop": true,
+   "P3 noop at the floor": true,
+   "P4 regression not paid": true,
+   "P5 tampering not paid": true,
+   "P7 full beats best partial": true
+  },
+  "passed": true
+ },
+ "tier3-regression-trap": {
+  "budgets": {
+   "actions": 80,
+   "seconds": 900,
+   "tools": [
+    "read",
+    "edit",
+    "bash"
+   ]
+  },
+  "baseline": {
+   "passing": [
+    "test_chunk_basic",
+    "test_chunk_empty",
+    "test_median_odd",
+    "test_parse_ranges_single",
+    "test_legacy_ranges_stay_exclusive"
+   ],
+   "failing": [
+    "test_median_even",
+    "test_parse_ranges_one_range",
+    "test_parse_ranges_two_ranges"
+   ]
+  },
+  "rewards_by_role": {
+   "noop": 0.0,
+   "partial": 0.6666666666666666,
+   "regression": 0.0,
+   "full": 1.0,
+   "tamper": 0.0
+  },
+  "informational": {},
+  "properties": {
+   "P1 full is strict maximum": true,
+   "P2 partial progress beats noop": true,
+   "P3 noop at the floor": true,
+   "P4 regression not paid": true,
+   "P5 tampering not paid": true,
+   "P7 full beats best partial": true
+  },
+  "passed": true
+ }
+}

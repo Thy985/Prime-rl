@@ -1,0 +1,22 @@
+# Evaluate a model on the swe-lab fixture through verifiers v1.
+# Requires the local inference server: localhost:8000/v1 (see inference_qwen3_06b.toml).
+#
+#   PYTHONPATH=tools/swe_lab_env uv run vf-eval @ tools/swe_lab/eval.toml
+
+model = "PrimeIntellect/Qwen3-0.6B"
+num_examples = 1
+group_size = 1
+
+[client]
+base_url = "http://localhost:8000/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 2048
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.agent.harness.id = "null"
+env.agent.runtime.type = "subprocess"

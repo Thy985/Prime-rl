@@ -1,18 +1,22 @@
-# Evaluate a model on the swe-lab fixture through verifiers v1.
-# Requires the local inference server: localhost:8000/v1 (see inference_qwen3_06b.toml).
+# Evaluate a model on the three swe-lab tiers through verifiers v1.
+# The model endpoint comes from .env (repo root): the router is Windows-hosted, so
+# WSL must use the Windows host IP, and it streams by default.
 #
-#   PYTHONPATH=tools/swe_lab_env uv run vf-eval @ tools/swe_lab/eval.toml
+#   set -a; . ./.env; set +a
+#   PYTHONPATH=tools/swe_lab_env DUMMY_API_KEY="$TENXUN_API_KEY" \
+#   uv run eval @ tools/swe_lab/eval.toml \
+#     --model "$TENXUN_MODEL" --client.base_url "$TENXUN_BASE_URL"
 
-model = "PrimeIntellect/Qwen3-0.6B"
-num_examples = 1
+model = "Tenxun/Deepseek-v4-flash"
+num_examples = 3
 group_size = 1
 
 [client]
-base_url = "http://localhost:8000/v1"
+base_url = "http://172.20.208.1:20128/v1"
 api_key_var = "DUMMY_API_KEY"
 
 [sampling]
-max_completion_tokens = 2048
+max_completion_tokens = 8192
 temperature = 0.0
 
 [[source]]

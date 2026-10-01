@@ -200,3 +200,52 @@ longer horizons, a second task family.
 - Tamper-pressure task variant ("make the suite pass") to harvest genuine
   reward-hacking trajectories as a labelled negative class. Recommended.
 - pytest on the Windows side: install once, or `uv run --with pytest` per run.
+---
+
+## Phase 1B status (measured)
+
+Achieved: a real verifiers Episode runs and is scored by the audited verifier.
+
+    Env swe-lab ready in 6.5s (num_tasks=1)
+    rollout start: task=0 harness=null runtime=subprocess
+    rollout done:  task=0 reward=0.000 turns=1 stop=agent_completed
+    Evaluated swe-lab (Step 0) | 44.2s | Reward 0.0000 | Truncation 100.0%
+    episode=c192516f5621 trace=cc0784a29b94 env=swe-lab reward=0.000 tokens=535/2048
+
+`tools/swe_lab/index_episode.py` now derives the experiment record FROM the
+verifiers episode index (ids, reward, tokens, turns, stop condition, truncation
+copied verbatim; only task identity, env fingerprint and replay metadata added),
+so the record is an index over a genuine Episode rather than a parallel structure.
+
+### The replay closure must be split in two
+
+`vf-replay` is documented as re-scoring "judges + trace-only signals; **no
+runtime**". A reward that executes the suite -- this task's `target_fix_fraction`
+-- is therefore **outside its scope**. Two replay modes, not interchangeable:
+
+| reward kind | replay |
+| --- | --- |
+| trace-only signals, judges | `vf-replay` over saved `traces.jsonl` |
+| **executing (this task)** | re-run the verifier over the **archived repository state** |
+
+Proven on the deterministic episodes: `golden.py` and `episode_scripted.py` both
+re-derive an identical verdict from the frozen final state. Not yet proven on a
+live episode, because prime-rl's `eval` monitor persists only
+`monitors/file/traces/stream.index.jsonl`; full `traces.jsonl` (with the model's
+reply, which is what the executing reward re-applies) is written by the
+**`vf-eval`** CLI path instead.
+
+### Remaining for Phase 1B acceptance
+
+1. Run through `vf-eval` (verifiers-native config, no `[[source]]`) so full
+   `traces.jsonl` is persisted.
+2. Write the executing-replay runner: read the saved trace, re-extract the
+   proposed file, re-run the verifier, and require
+   `live reward == replayed reward`.
+3. Only then is "live verdict == replayed verdict" satisfied for the live episode.
+
+### Capability note
+
+The 0.6B scores 0 because it exhausts the 2048-token cap without emitting a
+complete fenced file (`truncated: true`, `output_tokens: 2048`). This is the
+expected capability boundary, not a chain failure; capability probing is Phase 3.

@@ -1,19 +1,27 @@
 """Phase 3: the capability frontier across the swe-lab tiers.
 
-Reads a finished eval run, decompresses its stream traces, and re-derives every
+Reads finished eval runs, decompresses their stream traces, and re-derives every
 score from the saved reply through the taskset's own scorer. Re-deriving rather
 than trusting the recorded number is deliberate: the recorded reward reflects the
 parser as it was at run time, and a parser fix must be able to correct the
 measurement without re-rolling the model. Both numbers are reported.
 
-Per tier it reports solve rate and a failure mixture, so the frontier is located
-instead of averaged away:
+Per tier it reports the solve rate and a failure mixture, so the frontier is
+located instead of averaged away:
 
   no_proposal     the reply yielded no file contents at all
   invalid_syntax  a proposed file does not compile
   regression      a previously passing test broke
   partial         some target tests fixed, not all
   no_progress     parsed and valid, but no target test fixed
+
+Episodes whose request errored are NOT model failures: they are excluded from the
+denominator and reported separately, because counting them as failures understates
+the solve rate.
+
+The frontier is the first tier not solved on every valid attempt. With few
+attempts a 50% cut-off hides a real cliff, and 8/8 versus 4/8 is the difference
+between dependable and unusable.
 
 Raw trajectories stay in the run directory; no training view is written here.
 
@@ -40,12 +48,17 @@ sys.path.insert(0, str(REPO / "tools" / "swe_lab_env"))
 import terrain
 from swe_lab.taskset import SweLabConfig, SweLabTaskset, parse_proposals
 
-FAILURES = ("no_proposal", "invalid_syntax", "regression", "partial", "no_progress")
-
-# An episode whose request errored is NOT a model failure. Counting it as one
-# understates the solve rate, so invalid episodes are excluded from the
-# denominator and reported separately as a reliability figure.
 INVALID_STOPS = ("error",)
+
+
+def all_runs(pattern: str) -> list[Path]:
+    """Every run matching a glob, newest last."""
+    candidates = Path(pattern)
+    if candidates.is_absolute():
+        found = [candidates] if candidates.is_dir() else sorted(candidates.parent.glob(candidates.name))
+    else:
+        found = sorted(REPO.glob(pattern))
+    return sorted(found, key=lambda path: path.stat().st_mtime)
 
 
 def read_traces(run_dir: Path) -> list[dict]:
@@ -95,36 +108,17 @@ def classify(reply: str, files: dict, verdict, reward: float) -> str:
     return "no_progress"
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--run", default=None)
-    ap.add_argument("--out", default=str(REPO / "outputs" / "swe_runs" / "frontier.json"))
-    args = ap.parse_args()
+def load_tasks() -> dict:
+    return {task.data.name: task for task in SweLabTaskset(SweLabConfig(id="swe-lab")).load()}
 
-    candidates = Path(args.run) if args.run else None
-    if candidates is not None and candidates.is_absolute():
-        run_dirs = [candidates] if candidates.is_dir() else sorted(candidates.parent.glob(candidates.name))
-    else:
-        run_dirs = sorted(REPO.glob(args.run or RUN_GLOB))
-    if not run_dirs:
-        print("no swe-lab runs found for", args.run or RUN_GLOB)
-        return 1
-    run_dir = max(run_dirs, key=lambda path: path.stat().st_mtime)
 
-    tasks = {task.data.name: task for task in SweLabTaskset(SweLabConfig(id="swe-lab")).load()}
-    traces = read_traces(run_dir)
-    if not traces:
-        print("no traces in", run_dir)
-        return 1
-
+def score_run(run_dir: Path, tasks: dict) -> dict:
+    """Per-tier scoring for one run. Shared by the single-run and repeat reports."""
     per_tier: dict[str, list[dict]] = defaultdict(list)
-    for trace in traces:
+    for trace in read_traces(run_dir):
         per_tier[tier_of(trace)].append(trace)
 
     summary = {}
-    print("run:", run_dir.name)
-    print("%-24s %3s %6s %6s %7s %8s  %s"
-          % ("tier", "n", "valid", "error", "solve", "rescored", "failure mixture (valid only)"))
     for tier in sorted(per_tier):
         rows = []
         invalid = 0
@@ -150,47 +144,68 @@ def main() -> int:
         for row in rows:
             if row["failure"]:
                 mixture[row["failure"]] += 1
-        total = len(rows) + invalid
+        summary[tier] = {
+            "n": len(rows) + invalid,
+            "n_valid": len(rows),
+            "n_invalid": invalid,
+            "solved": solved,
+            "solve_rate": solved / len(rows) if rows else None,
+            "mean_rescored": sum(row["reward"] for row in rows) / len(rows) if rows else None,
+            "mean_recorded": sum((row["recorded"] or 0.0) for row in rows) / len(rows) if rows else None,
+            "failures": dict(mixture),
+        }
+    return summary
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--run", default=None)
+    ap.add_argument("--out", default=str(REPO / "outputs" / "swe_runs" / "frontier.json"))
+    args = ap.parse_args()
+
+    run_dirs = all_runs(args.run or RUN_GLOB)
+    if not run_dirs:
+        print("no swe-lab runs found for", args.run or RUN_GLOB)
+        return 1
+    run_dir = run_dirs[-1]
+
+    tasks = load_tasks()
+    summary = score_run(run_dir, tasks)
+    if not summary:
+        print("no traces in", run_dir)
+        return 1
+
+    print("run:", run_dir.name)
+    print("%-24s %3s %6s %6s %7s %8s  %s"
+          % ("tier", "n", "valid", "error", "solve", "rescored", "failure mixture (valid only)"))
+    for tier in sorted(summary):
+        row = summary[tier]
         print(
             "%-24s %3d %6d %6d %7s %8.3f  %s"
             % (
                 tier,
-                total,
-                len(rows),
-                invalid,
-                "%d/%d" % (solved, len(rows)) if rows else "n/a",
-                sum(row["reward"] for row in rows) / len(rows) if rows else 0.0,
-                ", ".join("%s=%d" % item for item in sorted(mixture.items())) or "-",
+                row["n"],
+                row["n_valid"],
+                row["n_invalid"],
+                "%d/%d" % (row["solved"], row["n_valid"]) if row["n_valid"] else "n/a",
+                row["mean_rescored"] or 0.0,
+                ", ".join("%s=%d" % item for item in sorted(row["failures"].items())) or "-",
             )
         )
-        summary[tier] = {
-            "n": total,
-            "n_valid": len(rows),
-            "n_invalid": invalid,
-            "solve_rate": solved / len(rows) if rows else None,
-            "mean_rescored": sum(row["reward"] for row in rows) / len(rows) if rows else None,
-            "failures": dict(mixture),
-        }
 
-    # The frontier is where the model stops being RELIABLE, not where it drops below
-    # an arbitrary half. With few attempts a 50% cut-off hides a real cliff, and the
-    # difference between 4/8 and 8/8 is the difference between unusable and dependable.
-    unsolved = [
-        tier for tier in sorted(summary)
-        if summary[tier]["solve_rate"] is not None and summary[tier]["solve_rate"] < 1.0
-    ]
-    print("\nfrontier (first tier not solved on every valid attempt):", unsolved[0] if unsolved else "none")
+    unreliable = [tier for tier in sorted(summary) if summary[tier]["solve_rate"] not in (None, 1.0)]
+    print("\nfrontier (first tier not solved on every valid attempt):",
+          unreliable[0] if unreliable else "none")
     for tier in sorted(summary):
         rate = summary[tier]["solve_rate"]
         if rate == 1.0:
             print("  %-24s reliable (all %d valid attempts solved)" % (tier, summary[tier]["n_valid"]))
         elif rate is not None:
             print("  %-24s unreliable: %.0f%% of %d valid attempts" % (tier, rate * 100, summary[tier]["n_valid"]))
-    print("\ncaveat: these are single-run rates at n=%d; run-to-run spread at this n is large,"
-          % max(s["n_valid"] or 0 for s in summary.values()))
-    print("        so treat the ordering as the result and the exact rate as provisional.")
+    print("\ncaveat: a single run at this n is noisy; for a stable rate see repeats.py")
+
     Path(args.out).write_text(
-        json.dumps({"run": run_dir.name, "tiers": summary, "frontier": unsolved[:1]}, indent=1)
+        json.dumps({"run": run_dir.name, "tiers": summary, "frontier": unreliable[:1]}, indent=1)
     )
     print("wrote", args.out)
     print("raw trajectories untouched in", run_dir.relative_to(REPO))

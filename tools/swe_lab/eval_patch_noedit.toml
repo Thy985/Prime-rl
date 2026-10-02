@@ -1,0 +1,28 @@
+# Harness B (narrow): same everything as eval_patch.toml except the harness drops
+# its `edit` tool, so the agent must modify files through bash alone. The CLI cannot
+# combine [[source]] with --env.* shorthands, so the difference lives here.
+#
+#   uv run eval @ tools/swe_lab/eval_patch_noedit.toml ...
+#
+# Harness A (with edit) measured 5.2 / 4.2 / 9.0 / 6.2 tool calls per episode across
+# tiers 1-4, all solved; compare against this.
+
+model = "9router/dots3-note-prev"
+num_examples = 4
+group_size = 4
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "bash"
+env.agent.harness.edit = false
+env.agent.runtime.type = "subprocess"

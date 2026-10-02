@@ -1,0 +1,35 @@
+pattern: outputs/swe-lab-budget-hD[134]
+episodes: 120 over 3 run(s): swe-lab-budget-hD1, swe-lab-budget-hD3, swe-lab-budget-hD4
+
+swe-lab-budget-hD1  episodes=40 solved=26 (65%)
+  reached: PLAN 40/40  EXECUTE 40/40  FEEDBACK 40/40
+  mean sampled calls: PLAN 1.00  EXECUTE 2.00  FEEDBACK 1.00
+  plan written in the planning turn: 0/40   planning write refusals fired: 0
+  stops: {'agent_completed': 12, 'max_turns': 28}
+  tool mix: EXECUTE/bash:41  EXECUTE/edit:61  FEEDBACK/bash:14  FEEDBACK/edit:15  PLAN/bash:57
+
+swe-lab-budget-hD3  episodes=40 solved=26 (65%)
+  reached: PLAN 40/40  EXECUTE 40/40  FEEDBACK 40/40
+  mean sampled calls: PLAN 1.00  EXECUTE 2.00  FEEDBACK 1.00
+  plan written in the planning turn: 0/40   planning write refusals fired: 0
+  stops: {'max_turns': 27, 'agent_completed': 13}
+  tool mix: EXECUTE/bash:43  EXECUTE/edit:64  FEEDBACK/bash:10  FEEDBACK/edit:17  PLAN/bash:60
+
+swe-lab-budget-hD4  episodes=40 solved=29 (72%)
+  reached: PLAN 40/40  EXECUTE 40/40  FEEDBACK 40/40
+  mean sampled calls: PLAN 1.00  EXECUTE 2.00  FEEDBACK 1.00
+  plan written in the planning turn: 0/40   planning write refusals fired: 0
+  stops: {'max_turns': 29, 'agent_completed': 11}
+  tool mix: EXECUTE/bash:36  EXECUTE/edit:66  FEEDBACK/bash:13  FEEDBACK/edit:16  PLAN/bash:58
+
+pooled per tier:
+  tier1-single-file        solve 24/24 (100%) | plan bash 2.0 | execute edit 2.0 | feedback edit 0.0
+                             edited during feedback: 0/24, of those solved 0
+  tier2-multifile          solve 24/24 (100%) | plan bash 1.1 | execute edit 2.0 | feedback edit 0.0
+                             edited during feedback: 0/24, of those solved 0
+  tier3-regression-trap    solve 14/24 ( 58%) | plan bash 2.1 | execute edit 2.4 | feedback edit 0.5
+                             edited during feedback: 13/24, of those solved 5
+  tier4-hidden-config-layer solve 15/24 ( 62%) | plan bash 1.0 | execute edit 1.0 | feedback edit 1.0
+                             edited during feedback: 23/24, of those solved 15
+  tier5-multi-constraint   solve  4/24 ( 17%) | plan bash 1.1 | execute edit 0.6 | feedback edit 0.5
+                             edited during feedback: 11/24, of those solved 2

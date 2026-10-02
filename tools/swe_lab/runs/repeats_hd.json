@@ -1,0 +1,89 @@
+{
+ "runs": [
+  "swe-lab-budget-hD1",
+  "swe-lab-budget-hD3",
+  "swe-lab-budget-hD4"
+ ],
+ "tiers": {
+  "tier1-single-file": {
+   "mean_tool_calls": 5.458333333333333,
+   "pooled_solve_rate": 1.0,
+   "valid": 24,
+   "solved": 24,
+   "per_run": {
+    "swe-lab-budget-hD1": 1.0,
+    "swe-lab-budget-hD3": 1.0,
+    "swe-lab-budget-hD4": 1.0
+   },
+   "range": [
+    1.0,
+    1.0
+   ],
+   "invalid": 0
+  },
+  "tier2-multifile": {
+   "mean_tool_calls": 4.125,
+   "pooled_solve_rate": 1.0,
+   "valid": 24,
+   "solved": 24,
+   "per_run": {
+    "swe-lab-budget-hD1": 1.0,
+    "swe-lab-budget-hD3": 1.0,
+    "swe-lab-budget-hD4": 1.0
+   },
+   "range": [
+    1.0,
+    1.0
+   ],
+   "invalid": 0
+  },
+  "tier3-regression-trap": {
+   "mean_tool_calls": 5.708333333333333,
+   "pooled_solve_rate": 0.5833333333333334,
+   "valid": 24,
+   "solved": 14,
+   "per_run": {
+    "swe-lab-budget-hD1": 0.5,
+    "swe-lab-budget-hD3": 0.5,
+    "swe-lab-budget-hD4": 0.75
+   },
+   "range": [
+    0.5,
+    0.75
+   ],
+   "invalid": 0
+  },
+  "tier4-hidden-config-layer": {
+   "mean_tool_calls": 4.0,
+   "pooled_solve_rate": 0.625,
+   "valid": 24,
+   "solved": 15,
+   "per_run": {
+    "swe-lab-budget-hD1": 0.625,
+    "swe-lab-budget-hD3": 0.625,
+    "swe-lab-budget-hD4": 0.625
+   },
+   "range": [
+    0.625,
+    0.625
+   ],
+   "invalid": 0
+  },
+  "tier5-multi-constraint": {
+   "mean_tool_calls": 4.5,
+   "pooled_solve_rate": 0.16666666666666666,
+   "valid": 24,
+   "solved": 4,
+   "per_run": {
+    "swe-lab-budget-hD1": 0.125,
+    "swe-lab-budget-hD3": 0.125,
+    "swe-lab-budget-hD4": 0.25
+   },
+   "range": [
+    0.125,
+    0.25
+   ],
+   "invalid": 0
+  }
+ }
+}

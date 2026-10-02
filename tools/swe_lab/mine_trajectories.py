@@ -28,7 +28,6 @@ from __future__ import annotations
 import argparse
 import io
 import json
-import re
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -38,53 +37,9 @@ import zstandard
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from frontier import all_runs, recorded_reward, tier_of, tool_calls
+from frontier import action_kind, all_runs, recorded_reward, tier_of, tool_calls
 
 DEFAULT_RUNS = ("outputs/swe-lab-harnessB-noedit", "outputs/swe-lab-harnessA")
-
-TEST_RE = re.compile(r"\bpytest\b|\bunittest\b")
-WRITE_RE = re.compile(r">\s*\S|\bsed -i\b|\btee\b|<<\s*['\"]?EOF|\bpatch\b|\bapply_patch\b")
-INSPECT_RE = re.compile(r"^\s*(cat|ls|head|tail|grep|find|sed|wc|file|awk|less|diff)\b")
-
-
-WRITE_TOOLS = ("edit", "write", "apply_patch", "str_replace", "create")
-
-
-def kind_of(command: str) -> str:
-    """Classify a bash command by what it is FOR, not by which binary it calls."""
-    text = (command or "").strip()
-    if TEST_RE.search(text):
-        return "test"
-    if WRITE_RE.search(text):
-        return "write"
-    if INSPECT_RE.match(text):
-        return "inspect"
-    return "other"
-
-
-def action_kind(call: dict) -> str:
-    """Classify a TOOL CALL, which is not always a bash command.
-
-    A dedicated edit/write tool changes a file with no shell command at all, so
-    classifying only bash text reported every edit-tool repair as "never wrote
-    anything" -- a measurement bug, not a behavioural finding.
-    """
-    name = (call.get("name") or "").lower()
-    if any(marker in name for marker in WRITE_TOOLS):
-        return "write"
-    if name != "bash":
-        return "other"
-    arguments = call.get("arguments") or ""
-    command = ""
-    if arguments.strip().startswith("{"):
-        try:
-            command = json.loads(arguments).get("command", "") or ""
-        except json.JSONDecodeError:
-            command = ""
-    else:
-        command = arguments
-    return kind_of(command)
-
 
 def features(trace: dict, solved: bool) -> dict:
     calls = tool_calls(trace)

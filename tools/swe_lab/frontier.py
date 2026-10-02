@@ -34,6 +34,7 @@ import argparse
 import ast
 import io
 import json
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -49,6 +50,44 @@ import terrain
 from swe_lab.taskset import SweLabConfig, SweLabTaskset, parse_proposals
 
 INVALID_STOPS = ("error",)
+
+TEST_RE = re.compile(r"\bpytest\b|\bunittest\b")
+WRITE_RE = re.compile(r">\s*\S|\bsed -i\b|\btee\b|<<\s*['\"]?EOF|\bpatch\b|\bapply_patch\b")
+INSPECT_RE = re.compile(r"^\s*(cat|ls|head|tail|grep|find|sed|wc|file|awk|less|diff)\b")
+WRITE_TOOLS = ("edit", "write", "apply_patch", "str_replace", "create")
+
+
+def kind_of(command: str) -> str:
+    """Classify a bash command by what it is FOR, not by which binary it calls."""
+    text = (command or "").strip()
+    if TEST_RE.search(text):
+        return "test"
+    if WRITE_RE.search(text):
+        return "write"
+    if INSPECT_RE.match(text):
+        return "inspect"
+    return "other"
+
+
+def action_kind(call: dict) -> str:
+    """Classify a TOOL CALL, which is not always a bash command.
+
+    A dedicated edit/write tool changes a file with no shell command at all, so
+    classifying only bash text reports every edit-tool repair as "never wrote
+    anything" -- a measurement bug that would invert a success/failure finding.
+    """
+    name = (call.get("name") or "").lower()
+    if any(marker in name for marker in WRITE_TOOLS):
+        return "write"
+    if name != "bash":
+        return "other"
+    arguments = call.get("arguments") or ""
+    if arguments.strip().startswith("{"):
+        try:
+            return kind_of(json.loads(arguments).get("command", "") or "")
+        except json.JSONDecodeError:
+            return "other"
+    return kind_of(arguments)
 
 
 def all_runs(pattern: str) -> list[Path]:
@@ -157,13 +196,19 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
                 invalid += 1
                 continue
             calls = tool_calls(trace)
+            writes = sum(1 for call in calls if action_kind(call) == "write")
             if trace_mode(trace) == "patch":
                 # A patch reward was computed from the runtime tree during the rollout
                 # and cannot be re-derived offline (it needs a live runtime), so the
                 # recorded value is authoritative here.
                 verdict = None
                 reward = recorded
-                failure = None if reward >= 1.0 else "unsolved"
+                # "Ended without writing anything" is its own outcome, not a bad
+                # patch: the two call for different harness interventions.
+                if reward >= 1.0:
+                    failure = None
+                else:
+                    failure = "no_write" if writes == 0 else "unsolved"
             else:
                 task = tasks.get(tier)
                 verdict = task._score_reply(reply) if task else None
@@ -174,6 +219,7 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
                     "reward": reward,
                     "recorded": recorded,
                     "failure": failure,
+                    "writes": writes,
                     "mode": trace_mode(trace),
                     "tool_calls": len(calls),
                     "tool_names": [call["name"] for call in calls],
@@ -195,6 +241,8 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
             "solved": solved,
             "mode": rows[0]["mode"] if rows else "reply",
             "mean_tool_calls": (sum(row["tool_calls"] for row in rows) / len(rows)) if rows else 0.0,
+            "no_write": sum(1 for row in rows if row["writes"] == 0 and row["reward"] < 1.0),
+            "mean_writes": (sum(row["writes"] for row in rows) / len(rows)) if rows else 0.0,
             "tool_mix": dict(tool_mix),
             "solve_rate": solved / len(rows) if rows else None,
             "mean_rescored": sum(row["reward"] for row in rows) / len(rows) if rows else None,
@@ -223,14 +271,15 @@ def main() -> int:
         return 1
 
     print("run:", run_dir.name)
-    print("%-24s %3s %6s %6s %7s %8s %7s  %s"
-          % ("tier", "n", "valid", "error", "solve", "score", "tools", "failure mixture / tool mix"))
+    print("%-24s %3s %6s %6s %7s %8s %7s %6s %6s  %s"
+          % ("tier", "n", "valid", "error", "solve", "score", "tools", "writes", "no-write",
+             "failure mixture / tool mix"))
     for tier in sorted(summary):
         row = summary[tier]
         detail = ", ".join("%s=%d" % item for item in sorted(row["failures"].items()))
         mix = ", ".join("%s:%d" % item for item in sorted(row["tool_mix"].items()))
         print(
-            "%-24s %3d %6d %6d %7s %8.3f %7.1f  %s"
+            "%-24s %3d %6d %6d %7s %8.3f %7.1f %6.1f %6d  %s"
             % (
                 tier,
                 row["n"],
@@ -239,6 +288,8 @@ def main() -> int:
                 "%d/%d" % (row["solved"], row["n_valid"]) if row["n_valid"] else "n/a",
                 row["mean_rescored"] or 0.0,
                 row["mean_tool_calls"],
+                row["mean_writes"],
+                row["no_write"],
                 (detail or "-") + (" | " + mix if mix else ""),
             )
         )

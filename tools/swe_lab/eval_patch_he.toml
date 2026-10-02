@@ -1,0 +1,34 @@
+# Harness E: the ablation of Harness D. Same model, taskset, tools, runtime and
+# max_turns = 4, but the read-only planning turn is removed and its turn is given to
+# the execution phase, so only the reserved feedback turn differs from the free-form
+# Harness A loop.
+#
+#   H_A, max_turns = 4   free-form baseline
+#   H_D, max_turns = 4   plan 1 (read-only) + execute 2 + feedback 1
+#   H_E, max_turns = 4   <- this config: execute 3 + feedback 1, no plan turn
+#
+# SWE_LAB_PHASES = "0,3," skips the plan phase (cap 0) and gives execute 3 calls; the
+# feedback phase takes the rest. The question: does the tier3 gain survive without the
+# read-only turn? If it does, the reserved feedback turn carries it; if not, the read-only
+# recon turn was doing the work.
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 8
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.harness.env = { SWE_LAB_PHASES = "0,3," }

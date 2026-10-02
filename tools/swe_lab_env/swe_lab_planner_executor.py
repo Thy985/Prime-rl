@@ -61,6 +61,36 @@ PHASE_PROTOCOL = (
     "The turn budget is counted across all three phases."
 )
 
+
+def _phase_protocol(env):
+    """The system-prompt description of the phases. The default is the verbatim text the
+    recorded Harness D runs used; a custom `SWE_LAB_PHASES` rebuilds it for the chosen
+    phases so the prompt never describes a phase the program will skip."""
+    raw = env.get("SWE_LAB_PHASES")
+    if not raw:
+        return PHASE_PROTOCOL
+    parts = [p.strip() for p in raw.split(",")]
+    caps = []
+    for i in range(3):
+        if i < len(parts) and parts[i] != "":
+            caps.append(int(parts[i]))
+        else:
+            caps.append(None)
+    names = ("plan", "execute", "feedback")
+    active = [(names[i], caps[i]) for i in range(3) if caps[i] != 0]
+    lines = ["", "", "You work in %d phases, and the harness allocates the turns:" % len(active)]
+    for idx, (name, cap) in enumerate(active, 1):
+        if name == "plan":
+            desc = "one turn, bash only, commands that change the repository are refused: find the defect and state the change to make."
+        elif name == "execute":
+            n = cap if cap is not None else "the remaining"
+            desc = "%s turns with bash and edit: apply the repair to the files on disk." % n
+        else:
+            desc = "the remaining turns: re-run the failing suite, repair what is still broken, report the result."
+        lines.append("%d %s -- %s" % (idx, name.upper(), desc))
+    lines.append("The turn budget is counted across all %d phases." % len(active))
+    return "\n".join(lines)
+
 _BUNDLED = bundle_program(CHAT_PROGRAM, mcp, compaction, core)
 if ENTRY_POINT not in _BUNDLED:
     raise RuntimeError(
@@ -77,7 +107,7 @@ class BashPlannerExecutorHarness(BashHarness):
 
     def resolve_prompt(self, task):
         system, prompt = super().resolve_prompt(task)
-        return (system or "") + PHASE_PROTOCOL, prompt
+        return (system or "") + _phase_protocol(self.config.env), prompt
 
     async def setup(self, runtime) -> None:
         await runtime.prepare_uv_script(PROGRAM_SOURCE, self.config.resolved_env)

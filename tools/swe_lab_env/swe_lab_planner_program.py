@@ -30,6 +30,7 @@ ends at the framework's own limit.
 
 import asyncio
 import json
+import os
 import re
 from contextlib import AsyncExitStack
 from pathlib import Path
@@ -61,8 +62,22 @@ if TYPE_CHECKING:
     )
     from verifiers.v1.harnesses.utils.mcp import call_mcp, connect_mcp
 
-# model-call allowance per phase; None means "until the framework stops us"
-PHASES = (("plan", 1), ("execute", 2), ("feedback", None))
+# Turn allowance per phase, read from SWE_LAB_PHASES as "plan,execute,feedback": an
+# empty field (or a missing trailing one) means "until the framework stops us", 0 skips
+# the phase. The default is the recorded Harness D allocation; "0,3," is the H_E control.
+DEFAULT_ALLOCATION = "1,2,"
+
+
+def parse_allocation(raw=DEFAULT_ALLOCATION):
+    parts = [p.strip() for p in raw.split(",")]
+    caps = []
+    for i in range(3):
+        if i < len(parts) and parts[i] != "":
+            caps.append(int(parts[i]))
+        else:
+            caps.append(None)
+    names = ("plan", "execute", "feedback")
+    return [(names[i], caps[i]) for i in range(3) if caps[i] != 0]
 
 # Deliberately coarse: the planning phase is read-only for commands that obviously
 # change the tree. It does not police bash; it stops the plan phase from silently
@@ -98,15 +113,46 @@ FEEDBACK_INSTRUCTION = (
 )
 
 
-def phase_instruction(phase, plan):
+def phase_instruction(phase, plan, had_plan, idx, total, turns):
+    """The phase prompt. The default allocation uses the verbatim strings above (the ones
+    the recorded Harness D runs used); a custom `SWE_LAB_PHASES` rebuilds the numbering,
+    the turn count and the plan block for whichever phases are actually run."""
+    if "SWE_LAB_PHASES" not in os.environ:
+        if phase == "plan":
+            return PLAN_INSTRUCTION
+        if phase == "execute":
+            stated = plan.strip() or (
+                "(the planning turn ended without a written plan; act on what it inspected)"
+            )
+            return EXECUTE_INSTRUCTION.format(plan=stated)
+        return FEEDBACK_INSTRUCTION
     if phase == "plan":
-        return PLAN_INSTRUCTION
-    if phase == "execute":
-        stated = plan.strip() or (
-            "(the planning turn ended without a written plan; act on what it inspected)"
+        return (
+            "PHASE %d of %d -- PLAN. This is your only planning turn: one turn to inspect and "
+            "decide, so spend it on the repository rather than on restating the task. Use bash "
+            "to find the defect; commands that change the repository are refused in this phase "
+            "and the edit tool is not available. Also reply with text at the end of this turn "
+            "if you can: the change to make in each file. The next phase applies it." % (idx, total)
         )
-        return EXECUTE_INSTRUCTION.format(plan=stated)
-    return FEEDBACK_INSTRUCTION
+    if phase == "execute":
+        plan_block = ""
+        if had_plan:
+            stated = plan.strip() or (
+                "(the planning turn ended without a written plan; act on what it inspected)"
+            )
+            plan_block = "What the planning turn produced:\n---\n%s\n---\n" % stated
+        return (
+            "PHASE %d of %d -- EXECUTE. %d turns to make the repair.\n"
+            "%s"
+            "Apply it now: change the files on disk with bash and edit. Do not restate the change "
+            "instead of making it. Reply with text once the edits are in place."
+            % (idx, total, turns, plan_block)
+        )
+    return (
+        "PHASE %d of %d -- FEEDBACK. Re-run the failing tests and read the output. If they "
+        "still fail, repair what remains and run them once more. Reply with text stating the "
+        "final result of the suite." % (idx, total)
+    )
 
 
 def looks_like_write(command):
@@ -229,10 +275,14 @@ async def phased_main():
         else:
             mcp_tools, dispatch, servers = [], {}, {}
         messages = initial_messages(args, initial)
+        allocation = parse_allocation(os.environ.get("SWE_LAB_PHASES", DEFAULT_ALLOCATION))
+        total = len(allocation)
+        had_plan = any(name == "plan" for name, _ in allocation)
         plan = ""
-        for phase, max_calls in PHASES:
+        for idx, (phase, max_calls) in enumerate(allocation, 1):
             tools = phase_tools(phase, args) + mcp_tools
-            messages.append({"role": "user", "content": phase_instruction(phase, plan)})
+            turns = max_calls if max_calls is not None else 0
+            messages.append({"role": "user", "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
             messages, reply = await run_phase(
                 args, client, args.model, messages, tools, dispatch, servers, tool_client,
                 read_only=(phase == "plan"), max_calls=max_calls,

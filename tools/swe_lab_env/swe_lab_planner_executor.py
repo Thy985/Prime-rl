@@ -1,29 +1,39 @@
-"""Harness D: `bash` + `edit` spent through a plan -> execute -> feedback allocation.
+"""Harness D: a staged, phase-gated allocation of a binding turn budget.
 
-Why this harness exists. Harness A solves every tier of the ladder 8/8; only a binding
-turn budget (`max_turns = 4`) produces a graded frontier -- 100 / 100 / 12.5 / 75 /
-12.5%. H_D runs the same model, taskset, tools, runtime and cap, and changes only how
-that allowance is spent: a fixed allocation across three phases instead of a free
-allocation across one loop.
+Harness A solves every tier of the ladder 8/8; only a binding turn budget
+(`max_turns = 4`) produces a graded frontier -- 100 / 100 / 12.5 / 75 / 12.5%. H_D runs
+the same model, taskset, tools, runtime and cap, and changes only how that allowance is
+spent: a fixed allocation across three phases instead of a free allocation across one
+loop.
 
-  plan      1 model call   bash only, write commands refused, no edit tool
-  execute   2 model calls  bash + edit
-  feedback  the rest       bash + edit
+  plan (read-only recon)   1 model call   bash only, write commands refused, no edit tool
+  execute                  2 model calls  bash + edit
+  feedback (verify)        the rest       bash + edit
+
+It is a *staged execution* harness, not a planner/executor: across 120 episodes no model
+ever wrote a plan in the recon turn (0/120) -- given one turn it always inspected -- so
+what is actually tested is whether redistributing a fixed budget across read-only recon,
+execution and verification beats spending it freely. The "planner" name is retired from
+the framing; the harness id and module names are kept stable so the recorded H_A / H_D /
+H_E runs stay reproducible.
 
 The allocation is the intervention, and it is why this is a harness program rather than
 a system-prompt hint. The first version let each phase run until the model replied with
 text, as the stock loop ends an episode; the smoke episode then spent all four turns of
-its budget inside the planning phase (pytest, two file reads, a 1190-character plan) and
-was stopped at max_turns with reward 0.0, never reaching execute. Under a binding budget
-an unbounded phase is not a phase.
+its budget inside the recon phase (pytest, two file reads, a 1190-character plan) and was
+stopped at max_turns with reward 0.0, never reaching execute. Under a binding budget an
+unbounded phase is not a phase.
 
 Predictions, recorded before the first full run (the smoke episode is not evidence
 either way -- one episode, easiest tier):
-  P+  solve rises on tier3/tier5 if those failures are "acted without a plan";
+  P+  solve rises on tier3/tier5 if those failures are "acted without first looking";
   P-  solve falls, because turn 1 cannot write and execution gets two turns where the
       free-form loop gets up to four;
   P0  solve holds and only the tool mix moves (inspect-heavy turn 1, edit-heavy middle)
       -- a phase allocation is then not the structure the failures need.
+  Outcome: tier3 rose (21% -> 58%, non-overlapping) and the H_E ablation decomposed the
+  gain into a verify-turn and a recon-turn component, roughly additive -- P0 did not
+  hold, and the value is a redistribution of action opportunity, not added planning.
 
 Not a fork: verifiers' own bundler concatenates the stock chat program's modules and
 `swe_lab_planner_program` is appended in place of core's entry point, so the tools, the

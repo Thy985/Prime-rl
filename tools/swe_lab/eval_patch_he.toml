@@ -1,6 +1,6 @@
 # Harness E: the ablation of Harness D. Same model, taskset, tools, runtime and
-# max_turns = 4, but the read-only planning turn is removed and its turn is given to
-# the execution phase, so only the reserved feedback turn differs from the free-form
+# max_turns = 4, but the read-only recon turn is removed and its turn is given to
+# the execution phase, so only the reserved verification turn differs from the free-form
 # Harness A loop.
 #
 #   H_A, max_turns = 4   free-form baseline

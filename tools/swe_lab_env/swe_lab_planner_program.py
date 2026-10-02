@@ -1,4 +1,4 @@
-"""The Harness D runtime program: plan -> execute -> feedback.
+"""The Harness D runtime program: a staged recon -> execute -> verify allocation.
 
 This module is not executed where it is imported. `swe_lab_planner_executor` appends
 its source to verifiers' own bundled chat program, so the names it uses -- BASH_TOOL,
@@ -14,18 +14,26 @@ The turn cap is not enforced here: verifiers refuses the turn that would exceed
 the clean budget stop it is. What the program does own is the ALLOCATION of a fixed
 allowance across the three phases:
 
-  plan      1 model call   bash, no edit tool, write commands refused
-  execute   2 model calls  bash + edit
-  feedback  the rest       bash + edit
+  plan (read-only recon)   1 model call   bash, no edit tool, write commands refused
+  execute                  2 model calls  bash + edit
+  feedback (verify)        the rest       bash + edit
 
-The allocation is not decoration. The first version let each phase run until the
-model replied with text, exactly as the stock loop ends an episode; the smoke episode
-then spent all four turns of a 4-turn budget inside the planning phase (pytest, then
-two file reads, then a 1190-character plan) and was stopped at max_turns with
-reward 0.0, never reaching execute. An unbounded phase is not a phase under a binding
-budget, so each early phase gets a call allowance and closes when it is spent, even
-if the model would have kept talking. The final phase is uncapped by the program and
-ends at the framework's own limit.
+It is staged execution, not planning: across 120 episodes no model ever wrote a plan in
+the recon turn (0/120) -- given one turn it always inspected instead. "Planner" is
+therefore retired from the framing; what this tests is the redistribution of a binding
+budget across recon, execution and verification. The allocation is not decoration. The
+first version let each phase run until the model replied with text, exactly as the stock
+loop ends an episode; the smoke episode then spent all four turns of a 4-turn budget
+inside the recon phase (pytest, then two file reads, then a 1190-character plan) and was
+stopped at max_turns with reward 0.0, never reaching execute. An unbounded phase is not
+a phase under a binding budget, so each early phase gets a call allowance and closes when
+it is spent, even if the model would have kept talking. The final phase is uncapped by
+the program and ends at the framework's own limit.
+
+The allowance is read from SWE_LAB_PHASES at run time ("plan,execute,feedback"; an empty
+field or a missing trailing field means "until the framework stops us", 0 skips the
+phase). The default is the recorded Harness D allocation; "0,3," is the H_E control,
+which removes the recon turn and gives its call to execute.
 """
 
 import asyncio
@@ -88,6 +96,8 @@ WRITE_COMMAND = re.compile(
     r"|>{1,2}(?!&)\s*(?!/dev/null\b)\S"
 )
 
+# The 'plan' phase is read-only recon in practice (0/120 wrote a plan); the label is
+# kept as the stable phase identifier, not as a claim about planning behaviour.
 PLAN_INSTRUCTION = (
     "PHASE 1 of 3 -- PLAN. This is your only planning turn: one turn to inspect and "
     "decide, so spend it on the repository rather than on restating the task. Use bash "

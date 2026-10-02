@@ -1,14 +1,17 @@
 # Harness D: the same allowance as the budgeted Harness A (max_turns = 4), spent
-# through a plan -> execute -> feedback protocol instead of one free-form loop.
+# through a staged recon -> execute -> verify allocation instead of one free-form loop.
 # The design and the three predictions recorded before this config was first run
 # live in tools/swe_lab_env/swe_lab_planner_executor.py.
 #
 #   H_A, max_turns = 4   tier1 8/8 | tier2 8/8 | tier3 1/8 | tier4 6/8 | tier5 1/8
 #   H_D, max_turns = 4   <- this config
 #
-# H_D is neither a budget change nor a prompt hint: the harness program owns the phase
-# boundaries, refuses write commands during planning, and withholds the edit tool until
-# the execution phase. The recorded H_A baseline is tools/swe_lab/runs/frontier_budget.json.
+# Staged execution, not a planner: across 120 episodes no model wrote a plan in the recon
+# turn (0/120), so the intervention is the redistribution of the budget across read-only
+# recon, execution and verification -- phase gating of the action opportunity, not added
+# planning. H_D is neither a budget change nor a prompt hint: the harness program owns the
+# phase boundaries, refuses write commands during the recon turn, and withholds the edit
+# tool until the execution phase. The recorded H_A baseline is tools/swe_lab/runs/frontier_budget.json.
 
 model = "9router/dots3-note-prev"
 num_examples = 5

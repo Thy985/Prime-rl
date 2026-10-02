@@ -33,9 +33,33 @@ import json
 import re
 from contextlib import AsyncExitStack
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import httpx
 from openai import AsyncOpenAI
+
+if TYPE_CHECKING:
+    # These are defined by the bundled chat program this module is appended to, so the
+    # declarations are annotation-time only: nothing is imported, either in the host
+    # that imports this module or in the script the harness generates.
+    from verifiers.v1.harnesses.utils.compaction import (
+        Compactor,
+        bound_tool_message,
+        compactable,
+        discover_threshold,
+        estimated_tokens,
+    )
+    from verifiers.v1.harnesses.utils.core import (
+        BASH_TOOL,
+        EDIT_TOOL,
+        SEARCH_TOOL,
+        gate_tool_call,
+        parse_args,
+        run_bash,
+        run_edit,
+        run_search,
+    )
+    from verifiers.v1.harnesses.utils.mcp import call_mcp, connect_mcp
 
 # model-call allowance per phase; None means "until the framework stops us"
 PHASES = (("plan", 1), ("execute", 2), ("feedback", None))

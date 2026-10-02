@@ -93,6 +93,31 @@ def tier_of(trace: dict) -> str:
     return data.get("tier") or data.get("name") or "unknown"
 
 
+def trace_mode(trace: dict) -> str:
+    """`reply` scores an answer; `patch` scored the runtime tree at rollout time."""
+    data = (trace.get("task") or {}).get("data") or {}
+    return data.get("mode") or "reply"
+
+
+def tool_calls(trace: dict) -> list[dict]:
+    """Tool calls as recorded on assistant message nodes (they are not on ModelCall)."""
+    calls = []
+    for node in trace.get("nodes") or []:
+        message = node.get("message") or {}
+        for call in message.get("tool_calls") or []:
+            calls.append(
+                {
+                    "name": call.get("name") or (call.get("function") or {}).get("name"),
+                    "arguments": call.get("arguments"),
+                }
+            )
+    return calls
+
+
+def advertised_tools(trace: dict) -> list[str]:
+    return [tool.get("name") for tool in (trace.get("tools") or []) if tool.get("name")]
+
+
 def classify(reply: str, files: dict, verdict, reward: float) -> str:
     proposals = parse_proposals(reply, files)
     if not proposals:
@@ -131,14 +156,27 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
             if trace.get("stop_condition") in INVALID_STOPS or recorded is None or not reply.strip():
                 invalid += 1
                 continue
-            task = tasks.get(tier)
-            verdict = task._score_reply(reply) if task else None
-            reward = terrain.REWARDS["target_fix_fraction"](verdict) if verdict else 0.0
+            calls = tool_calls(trace)
+            if trace_mode(trace) == "patch":
+                # A patch reward was computed from the runtime tree during the rollout
+                # and cannot be re-derived offline (it needs a live runtime), so the
+                # recorded value is authoritative here.
+                verdict = None
+                reward = recorded
+                failure = None if reward >= 1.0 else "unsolved"
+            else:
+                task = tasks.get(tier)
+                verdict = task._score_reply(reply) if task else None
+                reward = terrain.REWARDS["target_fix_fraction"](verdict) if verdict else 0.0
+                failure = None if reward >= 1.0 else classify(reply, files, verdict, reward)
             rows.append(
                 {
                     "reward": reward,
                     "recorded": recorded,
-                    "failure": None if reward >= 1.0 else classify(reply, files, verdict, reward),
+                    "failure": failure,
+                    "mode": trace_mode(trace),
+                    "tool_calls": len(calls),
+                    "tool_names": [call["name"] for call in calls],
                 }
             )
         solved = sum(1 for row in rows if row["reward"] >= 1.0)
@@ -146,11 +184,18 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
         for row in rows:
             if row["failure"]:
                 mixture[row["failure"]] += 1
+        tool_mix = defaultdict(int)
+        for row in rows:
+            for name in row["tool_names"]:
+                tool_mix[name] += 1
         summary[tier] = {
             "n": len(rows) + invalid,
             "n_valid": len(rows),
             "n_invalid": invalid,
             "solved": solved,
+            "mode": rows[0]["mode"] if rows else "reply",
+            "mean_tool_calls": (sum(row["tool_calls"] for row in rows) / len(rows)) if rows else 0.0,
+            "tool_mix": dict(tool_mix),
             "solve_rate": solved / len(rows) if rows else None,
             "mean_rescored": sum(row["reward"] for row in rows) / len(rows) if rows else None,
             "mean_recorded": sum((row["recorded"] or 0.0) for row in rows) / len(rows) if rows else None,
@@ -178,12 +223,14 @@ def main() -> int:
         return 1
 
     print("run:", run_dir.name)
-    print("%-24s %3s %6s %6s %7s %8s  %s"
-          % ("tier", "n", "valid", "error", "solve", "rescored", "failure mixture (valid only)"))
+    print("%-24s %3s %6s %6s %7s %8s %7s  %s"
+          % ("tier", "n", "valid", "error", "solve", "score", "tools", "failure mixture / tool mix"))
     for tier in sorted(summary):
         row = summary[tier]
+        detail = ", ".join("%s=%d" % item for item in sorted(row["failures"].items()))
+        mix = ", ".join("%s:%d" % item for item in sorted(row["tool_mix"].items()))
         print(
-            "%-24s %3d %6d %6d %7s %8.3f  %s"
+            "%-24s %3d %6d %6d %7s %8.3f %7.1f  %s"
             % (
                 tier,
                 row["n"],
@@ -191,9 +238,12 @@ def main() -> int:
                 row["n_invalid"],
                 "%d/%d" % (row["solved"], row["n_valid"]) if row["n_valid"] else "n/a",
                 row["mean_rescored"] or 0.0,
-                ", ".join("%s=%d" % item for item in sorted(row["failures"].items())) or "-",
+                row["mean_tool_calls"],
+                (detail or "-") + (" | " + mix if mix else ""),
             )
         )
+    if any(row["mode"] == "patch" for row in summary.values()):
+        print("\nmode: patch -- scores are the recorded runtime verdicts, not re-derived")
 
     unreliable = [tier for tier in sorted(summary) if summary[tier]["solve_rate"] not in (None, 1.0)]
     print("\nfrontier (first tier not solved on every valid attempt):",

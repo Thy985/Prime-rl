@@ -47,11 +47,12 @@ def main() -> int:
     print("runs:", len(per_run))
     print()
     header = "%-24s" % "tier" + "".join("%9s" % name.replace("swe-lab-", "") for name in per_run)
-    print(header + "%10s %10s %14s" % ("pooled", "range", "errors"))
+    print(header + "%10s %10s %8s %8s" % ("pooled", "range", "tools", "errors"))
     pooled_rows = {}
     for tier in tiers:
         cells = []
         solved = valid = invalid = 0
+        tool_total = tool_n = 0
         for name, summary in per_run.items():
             row = summary.get(tier)
             if not row:
@@ -61,6 +62,8 @@ def main() -> int:
             solved += row["solved"]
             valid += row["n_valid"]
             invalid += row["n_invalid"]
+            tool_total += row.get("mean_tool_calls", 0.0) * row["n_valid"]
+            tool_n += row["n_valid"]
         rates = [
             summary[tier]["solve_rate"]
             for summary in per_run.values()
@@ -68,16 +71,18 @@ def main() -> int:
         ]
         pooled = solved / valid if valid else None
         print(
-            "%-24s%s%10s %10s %14d"
+            "%-24s%s%10s %10s %8s %8d"
             % (
                 tier,
                 "".join(cells),
                 "%.0f%%" % (pooled * 100) if pooled is not None else "n/a",
                 "%.0f-%.0f%%" % (min(rates) * 100, max(rates) * 100) if rates else "n/a",
+                "%.1f" % (tool_total / tool_n) if tool_n else "-",
                 invalid,
             )
         )
         pooled_rows[tier] = {
+            "mean_tool_calls": (tool_total / tool_n) if tool_n else None,
             "pooled_solve_rate": pooled,
             "valid": valid,
             "solved": solved,

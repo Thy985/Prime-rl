@@ -188,7 +188,7 @@ def initial_messages(args, initial):
     return messages
 
 
-async def run_phase(args, client, model, messages, tools, dispatch, servers, tool_client, read_only, max_calls):
+async def run_phase(args, client, model, messages, tools, dispatch, servers, tool_client, read_only, max_calls, quiet):
     """Run one phase, mirroring the stock loop's tool dispatch and compaction.
 
     Returns the conversation and the phase's closing text reply (empty when the phase
@@ -225,10 +225,13 @@ async def run_phase(args, client, model, messages, tools, dispatch, servers, too
                 if not isinstance(tool_args, dict):
                     content = "error: tool arguments must be a JSON object, got %s" % type(tool_args).__name__
                 elif read_only and name == "bash" and looks_like_write(tool_args.get("command", "")):
-                    content = (
-                        "error: this is the planning turn and that command changes the repository; "
-                        "inspect the code and describe the change instead -- the execute phase applies it"
-                    )
+                    if quiet:
+                        content = "error: writes are not allowed in this turn"
+                    else:
+                        content = (
+                            "error: this is the planning turn and that command changes the repository; "
+                            "inspect the code and describe the change instead -- the execute phase applies it"
+                        )
                 elif name in dispatch:
                     content = await call_mcp(servers, dispatch, name, tool_args)
                 elif name == "bash" and args.bash:
@@ -288,14 +291,16 @@ async def phased_main():
         allocation = parse_allocation(os.environ.get("SWE_LAB_PHASES", DEFAULT_ALLOCATION))
         total = len(allocation)
         had_plan = any(name == "plan" for name, _ in allocation)
+        quiet = bool(os.environ.get("SWE_LAB_QUIET"))
         plan = ""
         for idx, (phase, max_calls) in enumerate(allocation, 1):
             tools = phase_tools(phase, args) + mcp_tools
             turns = max_calls if max_calls is not None else 0
-            messages.append({"role": "user", "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
+            if not quiet:
+                messages.append({"role": "user", "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
             messages, reply = await run_phase(
                 args, client, args.model, messages, tools, dispatch, servers, tool_client,
-                read_only=(phase == "plan"), max_calls=max_calls,
+                read_only=(phase == "plan"), max_calls=max_calls, quiet=quiet,
             )
             if phase == "plan":
                 plan = reply

@@ -76,6 +76,8 @@ def _phase_protocol(env):
     """The system-prompt description of the phases. The default is the verbatim text the
     recorded Harness D runs used; a custom `SWE_LAB_PHASES` rebuilds it for the chosen
     phases so the prompt never describes a phase the program will skip."""
+    if env.get("SWE_LAB_QUIET"):
+        return ""
     raw = env.get("SWE_LAB_PHASES")
     if not raw:
         return PHASE_PROTOCOL

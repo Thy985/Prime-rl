@@ -131,26 +131,26 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
                 continue
             calls = tool_calls(trace)
             canon = canonical_nodes(trace)
-            kept.append(
-                {
-                    "example_id": "%s:%s" % (episode["run"], episode["episode_id"]),
-                    "source": {
-                        "run": episode["run"],
-                        "episode_id": episode["episode_id"],
-                        "tier": tier,
-                        "reward": reward,
-                    },
-                    "stats": {
-                        "messages": len(messages),
-                        "trained_messages": sum(1 for m in messages if m["train"]),
-                        "tool_calls": len(calls),
-                        "tool_mix": dict(Counter(call["name"] for call in calls)),
-                        "writes": sum(1 for call in calls if action_kind(call) == "write"),
-                    },
-                    "messages": messages,
-                    "_canon": canon,
-                }
-            )
+            example = {
+                "example_id": "%s:%s" % (episode["run"], episode["episode_id"]),
+                "source": {
+                    "run": episode["run"],
+                    "episode_id": episode["episode_id"],
+                    "tier": tier,
+                    "reward": reward,
+                },
+                "stats": {
+                    "messages": len(messages),
+                    "trained_messages": sum(1 for m in messages if m["train"]),
+                    "tool_calls": len(calls),
+                    "tool_mix": dict(Counter(call["name"] for call in calls)),
+                    "writes": sum(1 for call in calls if action_kind(call) == "write"),
+                },
+                "messages": messages,
+                "_canon": canon,
+                "_trace": trace,
+            }
+            kept.append(example)
             per_tier_kept[tier] += 1
 
     manifest = {
@@ -209,11 +209,36 @@ def main() -> int:
         for example in examples for m in example["messages"] if m["role"] == "tool"
     )
     print("\nacceptance:")
-    branch_ok = all(
-        node.get("sampled", False)
-        for example in examples
-        for node in example.get("_canon") or []
-    )
+    branch_ok = True
+    for example in examples:
+        trace = example.get("_trace")
+        branch = example.get("_canon") or []
+        if not trace or not branch:
+            branch_ok = False
+            break
+        nodes = trace.get("nodes") or []
+        seen_pairs = set()
+        for n in branch:
+            key = (n.get("parent"), json.dumps((n.get("message") or {}).get("content"), sort_keys=True))
+            if key in seen_pairs:
+                branch_ok = False
+                break
+            seen_pairs.add(key)
+        if not branch_ok:
+            break
+        leaf_id = None
+        for i, n in enumerate(nodes):
+            if n is branch[-1]:
+                leaf_id = i
+                break
+        if leaf_id is None or any(n.get("parent") == leaf_id for n in nodes):
+            branch_ok = False
+            break
+        num_turns = trace.get("num_turns")
+        model_calls = sum(1 for n in branch if (n.get("message") or {}).get("role") == "assistant")
+        if num_turns is not None and model_calls != num_turns:
+            branch_ok = False
+            break
     checks = [
         ("mask is exactly the assistant turns", masked_ok),
         ("tool results are context, never trained", tool_context_untrained),

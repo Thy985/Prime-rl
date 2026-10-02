@@ -91,12 +91,27 @@ def action_kind(call: dict) -> str:
 
 
 def all_runs(pattern: str) -> list[Path]:
-    """Every run matching a glob, newest last."""
-    candidates = Path(pattern)
-    if candidates.is_absolute():
-        found = [candidates] if candidates.is_dir() else sorted(candidates.parent.glob(candidates.name))
+    """Every run matching a glob, newest last.
+
+    WSL's native ``Path.glob`` silently drops matches when the pattern contains a
+    glob class after the separator (e.g. ``swe-lab-hD[134]``); a shell-style
+    glob through the shell's own ``glob`` function resolves them.
+    """
+    import glob as _glob
+
+    def _candidates(base: Path, pat: str) -> list[Path]:
+        if base.is_dir():
+            found = sorted(base.glob(pat))
+        else:
+            found = [Path(c) for c in _glob.glob(str(base / pat))]
+        return found
+
+    if "/" not in pattern and pattern in ("", "."):
+        found = _candidates(REPO, pattern)
+    elif "*" in pattern or "[" in pattern:
+        found = _candidates(REPO, pattern)
     else:
-        found = sorted(REPO.glob(pattern))
+        found = _candidates(REPO, pattern) if REPO.exists() else []
     return sorted(found, key=lambda path: path.stat().st_mtime)
 
 

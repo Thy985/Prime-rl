@@ -120,6 +120,77 @@ def test_legacy_ranges_stay_exclusive():
 '''
 
 
+# ------------------------------------------------------- tier 4 (exploration)
+T4_CONF_INIT = ""
+T4_CONF_SETTINGS = '''"""Runtime configuration, the single source of truth for timeouts."""
+
+TIMEOUT_SECONDS = 30
+RETRIES = 3
+'''
+T4_SERVICE = '''"""Client-facing service layer."""
+
+from conf.settings import RETRIES, TIMEOUT_SECONDS
+
+DEFAULT_TIMEOUT = 1
+
+
+def timeout_seconds():
+    """The timeout this service will use for a request."""
+    return DEFAULT_TIMEOUT
+
+
+def retries():
+    return RETRIES
+
+
+def describe():
+    return "timeout=%s retries=%s" % (timeout_seconds(), retries())
+'''
+# A "fix" that only edits the visible constant satisfies two tests and still fails
+# the one that changes the configuration, because the service kept its own copy.
+T4_SERVICE_CONSTANT = T4_SERVICE.replace("DEFAULT_TIMEOUT = 1", "DEFAULT_TIMEOUT = 30")
+T4_SERVICE_FIXED = '''"""Client-facing service layer."""
+
+from conf import settings
+
+
+def timeout_seconds():
+    """The timeout this service will use for a request."""
+    return settings.TIMEOUT_SECONDS
+
+
+def retries():
+    return settings.RETRIES
+
+
+def describe():
+    return "timeout=%s retries=%s" % (timeout_seconds(), retries())
+'''
+T4_TEST = '''from conf.settings import RETRIES, TIMEOUT_SECONDS
+
+from service import describe, retries, timeout_seconds
+
+
+def test_retries_matches_config():
+    assert retries() == RETRIES
+
+
+def test_timeout_matches_current_config():
+    assert timeout_seconds() == TIMEOUT_SECONDS
+
+
+def test_timeout_follows_config_changes(monkeypatch):
+    import conf.settings as settings
+
+    monkeypatch.setattr(settings, "TIMEOUT_SECONDS", 7)
+    assert timeout_seconds() == 7
+
+
+def test_describe_uses_configured_timeout():
+    assert "timeout=30" in describe()
+'''
+
+
 def fix_median(text: str) -> str:
     return text.replace(terrain.MEDIAN_BUG, terrain.MEDIAN_FIX)
 
@@ -218,6 +289,48 @@ def build_tiers() -> dict:
                     },
                 ),
             },
+        },
+    }
+    tiers["tier4-hidden-config-layer"] = {
+        "description": (
+            "the failure surfaces in service.py, but the correct fix is to make the "
+            "service read the configuration layer instead of keeping its own copy"
+        ),
+        "files": {
+            "conf/__init__.py": T4_CONF_INIT,
+            "conf/settings.py": T4_CONF_SETTINGS,
+            "service.py": T4_SERVICE,
+            "test_service.py": T4_TEST,
+        },
+        "targets": [
+            "test_timeout_matches_current_config",
+            "test_timeout_follows_config_changes",
+            "test_describe_uses_configured_timeout",
+        ],
+        "budgets": {"actions": 120, "seconds": 1200, "tools": ["read", "edit", "bash", "search"]},
+        "candidates": {
+            "noop": ("noop", {}),
+            # Patching the visible constant earns partial credit without exploring:
+            # it satisfies the two value tests but not the one that changes the config.
+            "fix_constant": ("partial", {"service.py": T4_SERVICE_CONSTANT}),
+            "full": ("full", {"service.py": T4_SERVICE_FIXED}),
+            # The regression breaks retries(), which passed before the repair.
+            "regression": (
+                "regression",
+                {"service.py": T4_SERVICE_FIXED.replace(
+                    "    return settings.RETRIES", "    return 0")},
+            ),
+            "tamper": (
+                "tamper",
+                {"test_service.py": terrain.drop_tests(
+                    T4_TEST,
+                    [
+                        "test_timeout_matches_current_config",
+                        "test_timeout_follows_config_changes",
+                        "test_describe_uses_configured_timeout",
+                    ],
+                )},
+            ),
         },
     }
     return tiers

@@ -1,0 +1,35 @@
+pattern: outputs/swe-lab-budget-hE*
+episodes: 120 over 3 run(s): swe-lab-budget-hE1, swe-lab-budget-hE2, swe-lab-budget-hE3
+
+swe-lab-budget-hE1  episodes=40 solved=25 (62%)
+  reached: PLAN 0/40  EXECUTE 40/40  FEEDBACK 40/40
+  mean sampled calls: PLAN 0.00  EXECUTE 3.00  FEEDBACK 1.00
+  plan written in the planning turn: 0/40   planning write refusals fired: 0
+  stops: {'max_turns': 29, 'agent_completed': 11}
+  tool mix: EXECUTE/bash:95  EXECUTE/edit:59  FEEDBACK/bash:15  FEEDBACK/edit:17
+
+swe-lab-budget-hE2  episodes=40 solved=22 (55%)
+  reached: PLAN 0/40  EXECUTE 40/40  FEEDBACK 40/40
+  mean sampled calls: PLAN 0.00  EXECUTE 3.00  FEEDBACK 1.00
+  plan written in the planning turn: 0/40   planning write refusals fired: 0
+  stops: {'max_turns': 30, 'agent_completed': 10}
+  tool mix: EXECUTE/bash:91  EXECUTE/edit:49  FEEDBACK/bash:13  FEEDBACK/edit:19
+
+swe-lab-budget-hE3  episodes=40 solved=26 (65%)
+  reached: PLAN 0/40  EXECUTE 40/40  FEEDBACK 40/40
+  mean sampled calls: PLAN 0.00  EXECUTE 3.00  FEEDBACK 1.00
+  plan written in the planning turn: 0/40   planning write refusals fired: 0
+  stops: {'agent_completed': 10, 'max_turns': 30}
+  tool mix: EXECUTE/bash:83  EXECUTE/edit:59  FEEDBACK/bash:14  FEEDBACK/edit:17
+
+pooled per tier:
+  tier1-single-file        solve 24/24 (100%) | plan bash 0.0 | execute edit 2.0 | feedback edit 0.0
+                             edited during feedback: 0/24, of those solved 0
+  tier2-multifile          solve 24/24 (100%) | plan bash 0.0 | execute edit 2.0 | feedback edit 0.0
+                             edited during feedback: 0/24, of those solved 0
+  tier3-regression-trap    solve  9/24 ( 38%) | plan bash 0.0 | execute edit 1.5 | feedback edit 0.9
+                             edited during feedback: 22/24, of those solved 9
+  tier4-hidden-config-layer solve 15/24 ( 62%) | plan bash 0.0 | execute edit 1.0 | feedback edit 0.6
+                             edited during feedback: 15/24, of those solved 13
+  tier5-multi-constraint   solve  1/24 (  4%) | plan bash 0.0 | execute edit 0.5 | feedback edit 0.7
+                             edited during feedback: 11/24, of those solved 1

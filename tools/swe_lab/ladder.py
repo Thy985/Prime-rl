@@ -36,6 +36,7 @@ from tempfile import TemporaryDirectory
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import terrain
+import tier5
 
 TIER_ROOT = Path(__file__).resolve().parent / "tiers"
 
@@ -333,6 +334,7 @@ def build_tiers() -> dict:
             ),
         },
     }
+    tiers.update(tier5.tier())
     return tiers
 
 

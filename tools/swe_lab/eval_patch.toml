@@ -14,7 +14,7 @@
 # budgets fixed -- that comparison is the point of this config.
 
 model = "9router/dots3-note-prev"
-num_examples = 4
+num_examples = 5
 group_size = 8
 
 [client]

@@ -192,7 +192,15 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
             files = ((trace.get("task") or {}).get("data") or {}).get("files") or {}
             reply = last_reply(trace)
             recorded = recorded_reward(trace)
-            if trace.get("stop_condition") in INVALID_STOPS or recorded is None or not reply.strip():
+            mode = trace_mode(trace)
+            # An empty reply only invalidates a REPLY-mode episode. In patch mode the
+            # reward came from the runtime tree, so a rollout the budget stopped
+            # mid-tool-call is a legitimate episode that simply did not fix anything --
+            # counting it as invalid silently deletes the failures a budget creates.
+            if trace.get("stop_condition") in INVALID_STOPS or recorded is None:
+                invalid += 1
+                continue
+            if mode == "reply" and not reply.strip():
                 invalid += 1
                 continue
             calls = tool_calls(trace)

@@ -1,0 +1,33 @@
+# Harness A under a BINDING budget. Same model, taskset, tools and runtime as
+# eval_patch.toml; the only change is that the rollout is capped at 4 turns.
+#
+# Why a budget rather than a harder task: tiers 1-5 are all solved 8/8 by Harness A,
+# so a structural harness comparison on them would read 100% vs 100%. Tool cost does
+# vary (tier1/2 ~4-5 calls, tier3/5 ~8), so capping the budget at 4 should bind where
+# the work takes longer and create the headroom a harness comparison needs.
+#
+# It also satisfies the budget-control requirement: a planner/executor harness that
+# spends more turns is spending from the same allowance, so it cannot win by simply
+# spending more.
+#
+#   H_A with edit, max_turns = 4  ->  solve ?
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 8
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4

@@ -139,9 +139,18 @@ def trace_mode(trace: dict) -> str:
 
 
 def tool_calls(trace: dict) -> list[dict]:
-    """Tool calls as recorded on assistant message nodes (they are not on ModelCall)."""
+    """Tool calls as recorded on assistant message nodes (they are not on ModelCall).
+
+    Only `sampled` nodes count. A non-sampled node repeats a message the graph already
+    holds: when a harness program appends a message between model calls the recorder can
+    re-root the conversation, and the duplicated prefix then repeats the first turn's
+    calls -- inflating mean_tool_calls and, if that turn is a write-refused planning
+    turn, reporting writes that never ran.
+    """
     calls = []
     for node in trace.get("nodes") or []:
+        if not node.get("sampled"):
+            continue
         message = node.get("message") or {}
         for call in message.get("tool_calls") or []:
             calls.append(

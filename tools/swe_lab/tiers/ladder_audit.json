@@ -121,5 +121,86 @@
    "P7 full beats best partial": true
   },
   "passed": true
+ },
+ "tier4-hidden-config-layer": {
+  "budgets": {
+   "actions": 120,
+   "seconds": 1200,
+   "tools": [
+    "read",
+    "edit",
+    "bash",
+    "search"
+   ]
+  },
+  "baseline": {
+   "passing": [
+    "test_retries_matches_config"
+   ],
+   "failing": [
+    "test_timeout_matches_current_config",
+    "test_timeout_follows_config_changes",
+    "test_describe_uses_configured_timeout"
+   ]
+  },
+  "rewards_by_role": {
+   "noop": 0.0,
+   "partial": 0.6666666666666666,
+   "full": 1.0,
+   "regression": 0.0,
+   "tamper": 0.0
+  },
+  "informational": {},
+  "properties": {
+   "P1 full is strict maximum": true,
+   "P2 partial progress beats noop": true,
+   "P3 noop at the floor": true,
+   "P4 regression not paid": true,
+   "P5 tampering not paid": true,
+   "P7 full beats best partial": true
+  },
+  "passed": true
+ },
+ "tier5-multi-constraint": {
+  "budgets": {
+   "actions": 200,
+   "seconds": 1800,
+   "tools": [
+    "read",
+    "edit",
+    "bash",
+    "search"
+   ]
+  },
+  "baseline": {
+   "passing": [
+    "test_call_values_are_usable",
+    "test_config_defaults_are_pinned",
+    "test_legacy_expand_is_exclusive",
+    "test_legacy_flag"
+   ],
+   "failing": [
+    "test_call_reports_configured_limits",
+    "test_client_timeout_follows_config",
+    "test_service_retries_follow_config"
+   ]
+  },
+  "rewards_by_role": {
+   "noop": 0.0,
+   "partial": 0.3333333333333333,
+   "full": 1.0,
+   "regression": 0.0,
+   "tamper": 0.0
+  },
+  "informational": {},
+  "properties": {
+   "P1 full is strict maximum": true,
+   "P2 partial progress beats noop": true,
+   "P3 noop at the floor": true,
+   "P4 regression not paid": true,
+   "P5 tampering not paid": true,
+   "P7 full beats best partial": true
+  },
+  "passed": true
  }
 }

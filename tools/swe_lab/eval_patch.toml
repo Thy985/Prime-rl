@@ -1,0 +1,33 @@
+# Swe-lab in PATCH mode: the repository is staged into the agent's runtime and the
+# reward reads the runtime's final tree instead of parsing the reply. This is the
+# mode a harness comparison needs -- in reply mode the `null` loop exposes no
+# tools, so a tool-using harness and a chat loop differ only in prompt wrapping.
+#
+#   set -a; . ./.env; set +a
+#   PYTHONPATH=tools/swe_lab_env DUMMY_API_KEY="$TENXUN_API_KEY" \
+#   uv run eval @ tools/swe_lab/eval_patch.toml \
+#     --model "$TENXUN_MODEL_ALT" --client.base_url "$TENXUN_BASE_URL" -c 4
+#
+# Harness A here is `bash` (bash + edit tools, NEEDS_CONTAINER=False, so it runs on
+# the subprocess runtime on this box). Harness B would swap
+# `env.agent.harness.id` or the env topology (`env.id`), holding model, taskset and
+# budgets fixed -- that comparison is the point of this config.
+
+model = "9router/dots3-note-prev"
+num_examples = 3
+group_size = 4
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"

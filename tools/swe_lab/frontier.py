@@ -88,8 +88,9 @@ def last_reply(trace: dict) -> str:
 
 
 def tier_of(trace: dict) -> str:
+    """The tier id, independent of task mode (patch names carry a mode suffix)."""
     data = (trace.get("task") or {}).get("data") or {}
-    return data.get("name") or "unknown"
+    return data.get("tier") or data.get("name") or "unknown"
 
 
 def classify(reply: str, files: dict, verdict, reward: float) -> str:
@@ -109,7 +110,8 @@ def classify(reply: str, files: dict, verdict, reward: float) -> str:
 
 
 def load_tasks() -> dict:
-    return {task.data.name: task for task in SweLabTaskset(SweLabConfig(id="swe-lab")).load()}
+    """Keyed by tier so reply-mode and patch-mode runs resolve to the same task."""
+    return {task.data.tier: task for task in SweLabTaskset(SweLabConfig(id="swe-lab")).load()}
 
 
 def score_run(run_dir: Path, tasks: dict) -> dict:
@@ -130,7 +132,7 @@ def score_run(run_dir: Path, tasks: dict) -> dict:
                 invalid += 1
                 continue
             task = tasks.get(tier)
-            verdict = task._score(reply) if task else None
+            verdict = task._score_reply(reply) if task else None
             reward = terrain.REWARDS["target_fix_fraction"](verdict) if verdict else 0.0
             rows.append(
                 {

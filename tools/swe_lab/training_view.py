@@ -7,7 +7,7 @@ be explicit, reproducible and auditable rather than implied by reading the trace
 This tool applies a documented transformation and nothing else:
 
   filter      which episodes qualify (solved only, by default)
-  select      which messages become the example (the whole conversation)
+  select      which messages become the example (the canonical branch)
   mask        which messages carry loss (assistant turns only: content and tool
               calls; system, user and tool-result turns are context)
   view        the emitted JSONL plus a manifest recording the filters, the counts
@@ -15,6 +15,15 @@ This tool applies a documented transformation and nothing else:
 
 Raw trajectories are never modified: the run directory is read-only input, and every
 example carries its provenance so a view can be rebuilt from the runs alone.
+
+The canonical branch is the root-to-leaf path of the trace's final turn, following
+physical parent links backwards and skipping nothing. This matters for harnesses that
+change the advertised tool set mid-episode: when a read-only recon phase ends, the
+graph recorder re-roots the duplicate prefix as a parallel branch because the
+system node's tools_hash no longer matches, and the episode's node list carries the
+recon prefix twice. A node-level read of the trace would silently double-train that
+prefix; the branch walk does not. Episodes whose tool set is constant carry a
+single-branch trace, and the walk is the identity there.
 
 Deliberately excluded: `reasoning_content` is not copied into the view. It is model
 scratchpad, it is not what a tool-use SFT target should imitate, and copying it
@@ -29,7 +38,7 @@ import argparse
 import io
 import json
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 
 import zstandard
@@ -57,10 +66,29 @@ def load_episodes(pattern: str) -> list[dict]:
     return episodes
 
 
+def canonical_nodes(trace: dict) -> list[dict]:
+    """The trace's canonical branch: the last node's physical parent chain, root first.
+
+    The leaf is the most recent node (the final assistant reply or a turn stopped by
+    the budget). Parallel branches created by the graph recorder's re-rooting are
+    siblings, not ancestors, so the walk never crosses into them.
+    """
+    nodes = trace.get("nodes") or []
+    if not nodes:
+        return []
+    chain = []
+    current = len(nodes) - 1
+    while current is not None:
+        chain.append(nodes[current])
+        current = nodes[current].get("parent")
+    chain.reverse()
+    return chain
+
+
 def to_messages(trace: dict) -> list[dict]:
-    """The conversation, with an explicit per-message training mask."""
+    """The canonical conversation branch, with an explicit per-message training mask."""
     messages = []
-    for node in trace.get("nodes") or []:
+    for node in canonical_nodes(trace):
         source = node.get("message") or {}
         role = source.get("role")
         message = {"role": role, "content": source.get("content") or "", "train": role == TRAINED_ROLE}
@@ -102,6 +130,7 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
                 per_tier_dropped[tier] += 1
                 continue
             calls = tool_calls(trace)
+            canon = canonical_nodes(trace)
             kept.append(
                 {
                     "example_id": "%s:%s" % (episode["run"], episode["episode_id"]),
@@ -119,6 +148,7 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
                         "writes": sum(1 for call in calls if action_kind(call) == "write"),
                     },
                     "messages": messages,
+                    "_canon": canon,
                 }
             )
             per_tier_kept[tier] += 1
@@ -126,7 +156,7 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
     manifest = {
         "transformation": {
             "filter": "reward == 1.0 (solved only)" if require_solved else "none",
-            "select": "all messages of the episode",
+            "select": "canonical branch only (the final turn's parent chain; re-rooted duplicate prefixes are siblings, not ancestors)",
             "mask": "loss on assistant turns only (content and tool_calls)",
             "excluded": ["reasoning_content (model scratchpad, not a tool-use target)"],
         },
@@ -156,7 +186,8 @@ def main() -> int:
     out = Path(args.out)
     with out.open("w") as handle:
         for example in examples:
-            handle.write(json.dumps(example) + "\n")
+            record = {k: v for k, v in example.items() if not k.startswith("_")}
+            handle.write(json.dumps(record) + "\n")
     Path(args.manifest).write_text(json.dumps(manifest, indent=1))
 
     print("kept %d examples, dropped %s" % (manifest["kept"], manifest["dropped"]))
@@ -178,11 +209,17 @@ def main() -> int:
         for example in examples for m in example["messages"] if m["role"] == "tool"
     )
     print("\nacceptance:")
+    branch_ok = all(
+        node.get("sampled", False)
+        for example in examples
+        for node in example.get("_canon") or []
+    )
     checks = [
         ("mask is exactly the assistant turns", masked_ok),
         ("tool results are context, never trained", tool_context_untrained),
         ("every example carries provenance", all(e["source"]["run"] for e in examples)),
         ("manifest records the transformation", bool(manifest["transformation"]["filter"])),
+        ("the canonical branch is the sampled path (no duplicate prefixes)", branch_ok),
     ]
     for name, ok in checks:
         print("  [%s] %s" % ("PASS" if ok else "FAIL", name))

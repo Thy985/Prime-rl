@@ -142,10 +142,15 @@ def tool_calls(trace: dict) -> list[dict]:
     """Tool calls as recorded on assistant message nodes (they are not on ModelCall).
 
     Only `sampled` nodes count. A non-sampled node repeats a message the graph already
-    holds: when a harness program appends a message between model calls the recorder can
-    re-root the conversation, and the duplicated prefix then repeats the first turn's
-    calls -- inflating mean_tool_calls and, if that turn is a write-refused planning
-    turn, reporting writes that never ran.
+    holds. The re-rooting this triggers has a precise cause, found in
+    verifiers.v1.graph: a root node is keyed by (parent, tools_hash, message_hash),
+    so when the advertised tool set changes between turns -- a read-only recon turn
+    advertises bash only, the next turn adds edit -- the recorder cannot match the
+    existing root and re-roots, duplicating the prefix as a parallel branch.
+    H_A and H_E keep the tool set constant and never re-root; H_D and H_F always do.
+    The duplication is harmless here (sampled=True appears once per model call) but
+    would silently double-count tool calls and, on a write-refused recon turn,
+    report writes that never ran.
     """
     calls = []
     for node in trace.get("nodes") or []:

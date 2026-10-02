@@ -19,7 +19,7 @@
 # extra samples carry no information about solve rate.
 
 model = "Tenxun/Deepseek-v4-flash"
-num_examples = 3
+num_examples = 4
 group_size = 8
 
 [client]

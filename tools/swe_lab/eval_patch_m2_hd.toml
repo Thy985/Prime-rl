@@ -6,8 +6,8 @@
 # Everything except the model and the harness is held at the recorded condition: same
 # taskset, same patch mode, same subprocess runtime, same max_turns = 4, same
 # temperature 0.0, same staged allocation ("1,2,") that produced the dots3 H_D runs.
-# Only the model id changes, to sensenova/glm-5.2 -- a different family from the
-# dots3-note-preview the effect was discovered on (GLM vs a notes-style preview model).
+# Only the model id changes, to sensenova/glm-5.2 -- a named GLM model, a different family and training lineage
+# from the dots3-note-preview the effect was found on.
 #
 # Restricted to tier3 and tier5: tier3 is where H_D's effect was largest (21% -> 58%),
 # tier5 is where it was smallest (4% -> 17%). The two ends of the effect size are what
@@ -41,3 +41,11 @@ env.agent.harness.id = "swe-lab-planner-executor"
 env.agent.harness.env = { SWE_LAB_PHASES = "1,2," }
 env.agent.runtime.type = "subprocess"
 env.agent.max_turns = 4
+# Run this config at -c 1. The endpoint's secondary providers are rate-limited per
+# provider, and the eval's default -c 4 fires enough simultaneous calls to trip
+# `inference exceeds tpm/rpm limit`, which ends episodes at stop=ProviderError
+# rather than measuring the harness. Measured sustainable throughput on this
+# endpoint is ~32-43 calls/min sequential; a 48-episode run needs ~192 calls, so
+# -c 1 is what fits inside the quota. Two providers were rejected this way:
+# sensenova/glm-5.2 (rpm exhausted, 0/6 on retry) and
+# sensenova/deepseek-v4-flash (tpm/rpm limit, 144 provider errors per run).

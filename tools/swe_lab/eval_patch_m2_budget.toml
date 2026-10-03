@@ -1,0 +1,41 @@
+# Cross-model replication: H_A (bash + edit) on a SECOND model.
+#
+# The question this answers: is the H_D > H_A harness effect a property of the harness,
+# or an interaction with the one model it was found on (9router/dots3-note-prev)?
+#
+# Everything except the model is held at the recorded H_A condition: same taskset, same
+# patch mode, same subprocess runtime, same max_turns = 4, same temperature 0.0.
+# Only the model id changes, to sensenova/glm-5.2 -- a different family from the
+# dots3-note-preview the effect was discovered on (GLM vs a notes-style preview model).
+#
+# Restricted to tier3 and tier5: tier3 is where H_D's effect was largest (21% -> 58%),
+# tier5 is where it was smallest (4% -> 17%). The two ends of the effect size are what
+# a replication has to reproduce for the direction to mean anything.
+#
+# group_size = 24 gives 24 episodes per tier per run, matching the 24 pooled episodes
+# per tier already recorded for dots3 (3 runs of 8). One tier here is ONE task, so these
+# are 24 samples of the same task, not 24 tasks -- a within-task spread, which is the
+# same instrument the dots3 runs used.
+#
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_patch_m2_budget.toml --run.name m2-hA1
+
+model = "sensenova/glm-5.2"
+num_examples = 2
+group_size = 24
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.taskset.tiers = ["tier3-regression-trap", "tier5-multi-constraint"]
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4

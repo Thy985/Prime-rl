@@ -10,6 +10,18 @@ This tool applies a documented transformation and nothing else:
   select      which messages become the example (the canonical branch)
   mask        which messages carry loss (assistant turns only: content and tool
               calls; system, user and tool-result turns are context)
+  strip       harness-injected control text, in two places:
+              (a) user messages whose content begins with "PHASE " (the
+                  recon/execute/verify instructions the staged harness appended
+                  between calls) are dropped;
+              (b) the system message is normalized to the eval-time H_A system
+                  prompt via --system-from. The staged harness injects a 7-line
+                  phase protocol into the system prompt; at eval time the model
+                  will not see it, so training with it would bake the runtime
+                  control protocol into the policy.
+              Neither is part of the task, and either one silently turns a
+              behavior-distillation dataset into a protocol-memorization one.
+              The manifest records both counts per source.
   view        the emitted JSONL plus a manifest recording the filters, the counts
               kept and dropped per tier, and the source runs
 
@@ -49,6 +61,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from frontier import action_kind, all_runs, recorded_reward, tier_of, tool_calls
 
 DEFAULT_RUNS = ("outputs/swe-lab-abc-A*",)
+DEFAULT_SYSTEM_SOURCE = "outputs/swe-lab-budget-hA"
 TRAINED_ROLE = "assistant"
 
 
@@ -85,23 +98,84 @@ def canonical_nodes(trace: dict) -> list[dict]:
     return chain
 
 
-def to_messages(trace: dict) -> list[dict]:
-    """The canonical conversation branch, with an explicit per-message training mask."""
+def trim_unanswered_tool_calls(messages: list[dict]) -> int:
+    """Drop a trailing assistant turn whose tool calls never ran.
+
+    When the turn budget binds, the framework stops the episode right after the model
+    issued its tool calls, so the branch ends on an assistant message with no tool
+    result following it. Training that turn is actively harmful: the trainer appends a
+    stop token after every assistant message, so the target would teach the model to
+    end its turn, and its episode, right after emitting a tool call. Trimming the tail
+    keeps the valid prefix and removes the malformed end.
+    """
+    pending = 0
+    start = None
+    for index, message in enumerate(messages):
+        if message["role"] == "assistant" and message.get("tool_calls"):
+            pending = len(message["tool_calls"])
+            start = index
+        elif message["role"] == "tool" and pending:
+            pending -= 1
+    if not pending or start is None:
+        return 0
+    return len(messages) - start
+
+
+def to_messages(trace: dict, canonical_system: str | None = None) -> tuple[list[dict], int, bool, int]:
+    """The canonical conversation branch, with an explicit per-message training mask.
+
+    Returns (messages, phase_stripped, system_normalized). When `canonical_system` is
+    given, the episode's system message is replaced by it, so every view renders the
+    same system prompt the protocol-invariant eval will show.
+    """
     messages = []
+    stripped = 0
+    normalized_system = False
     for node in canonical_nodes(trace):
         source = node.get("message") or {}
         role = source.get("role")
-        message = {"role": role, "content": source.get("content") or "", "train": role == TRAINED_ROLE}
+        content = source.get("content") or ""
+        if role == "user" and content.startswith("PHASE "):
+            stripped += 1
+            continue
+        if role == "system" and canonical_system is not None:
+            content = canonical_system
+            normalized_system = True
+        message = {"role": role, "content": content, "train": role == TRAINED_ROLE}
         for key in ("name", "tool_call_id"):
             if source.get(key):
                 message[key] = source[key]
         if source.get("tool_calls"):
             message["tool_calls"] = source["tool_calls"]
         messages.append(message)
-    return messages
+    trimmed = trim_unanswered_tool_calls(messages)
+    return messages, stripped, normalized_system, trimmed
 
 
-def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[dict], dict]:
+def canonical_system_prompt(system_from: str | None) -> str | None:
+    """The eval-time system prompt, read from the harness that will run the eval.
+
+    The staged harness injects a phase protocol into its system prompt, so a view
+    built from it would teach the policy to expect text the eval never sends.
+    Reading the prompt from the eval's own harness keeps the two in step by
+    construction rather than by pattern-matching the protocol text.
+    """
+    if not system_from:
+        return None
+    episodes = load_episodes(system_from)
+    for episode in episodes:
+        for node in canonical_nodes(episode["trace"]):
+            message = node.get("message") or {}
+            if message.get("role") == "system":
+                return message.get("content") or ""
+    raise SystemExit("no system message found in --system-from %s" % system_from)
+
+
+def build(
+    run_patterns: list[str],
+    require_solved: bool = True,
+    canonical_system: str | None = None,
+) -> tuple[list[dict], dict]:
     kept, dropped = [], Counter()
     per_tier_kept = Counter()
     per_tier_dropped = Counter()
@@ -111,7 +185,15 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
         episodes = load_episodes(pattern)
         if not episodes:
             continue
-        sources.append({"pattern": pattern, "runs": sorted({e["run"] for e in episodes}), "episodes": len(episodes)})
+        src_entry = {
+            "pattern": pattern,
+            "runs": sorted({e["run"] for e in episodes}),
+            "episodes": len(episodes),
+            "phase_messages_stripped": 0,
+            "system_prompts_normalized": 0,
+            "unanswered_tool_turns_trimmed": 0,
+        }
+        sources.append(src_entry)
         for episode in episodes:
             trace = episode["trace"]
             reward = recorded_reward(trace)
@@ -124,7 +206,9 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
                 dropped["unsolved"] += 1
                 per_tier_dropped[tier] += 1
                 continue
-            messages = to_messages(trace)
+            messages, stripped, sys_norm, trimmed = to_messages(trace, canonical_system)
+            if trimmed:
+                messages = messages[:-trimmed]
             if not any(m["train"] for m in messages):
                 dropped["no_assistant_turn"] += 1
                 per_tier_dropped[tier] += 1
@@ -133,6 +217,9 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
             canon = canonical_nodes(trace)
             example = {
                 "example_id": "%s:%s" % (episode["run"], episode["episode_id"]),
+                "stripped_phase_messages": stripped,
+                "system_prompt_normalized": sys_norm,
+                "trimmed_unanswered_turns": trimmed,
                 "source": {
                     "run": episode["run"],
                     "episode_id": episode["episode_id"],
@@ -152,6 +239,9 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
             }
             kept.append(example)
             per_tier_kept[tier] += 1
+            src_entry["phase_messages_stripped"] += stripped
+            src_entry["system_prompts_normalized"] += int(sys_norm)
+            src_entry["unanswered_tool_turns_trimmed"] += trimmed
 
     manifest = {
         "transformation": {
@@ -159,6 +249,9 @@ def build(run_patterns: list[str], require_solved: bool = True) -> tuple[list[di
             "select": "canonical branch only (the final turn's parent chain; re-rooted duplicate prefixes are siblings, not ancestors)",
             "mask": "loss on assistant turns only (content and tool_calls)",
             "excluded": ["reasoning_content (model scratchpad, not a tool-use target)"],
+            "system_prompt": (
+                "normalized to the eval-time harness prompt" if canonical_system is not None else "as recorded"
+            ),
         },
         "sources": sources,
         "kept": len(kept),
@@ -176,9 +269,16 @@ def main() -> int:
     ap.add_argument("--out", default=str(REPO / "outputs" / "swe_runs" / "training_view.jsonl"))
     ap.add_argument("--manifest", default=str(REPO / "outputs" / "swe_runs" / "training_view.manifest.json"))
     ap.add_argument("--include-unsolved", action="store_true")
+    ap.add_argument(
+        "--system-from",
+        default=DEFAULT_SYSTEM_SOURCE,
+        help="run glob whose system prompt is the eval-time prompt; every view is normalized to it",
+    )
+    ap.add_argument("--keep-system", action="store_true", help="do not normalize the system prompt")
     args = ap.parse_args()
 
-    examples, manifest = build(args.run, require_solved=not args.include_unsolved)
+    canonical_system = None if args.keep_system else canonical_system_prompt(args.system_from)
+    examples, manifest = build(args.run, require_solved=not args.include_unsolved, canonical_system=canonical_system)
     if not examples:
         print("no examples built from", args.run)
         return 1
@@ -186,7 +286,7 @@ def main() -> int:
     out = Path(args.out)
     with out.open("w") as handle:
         for example in examples:
-            record = {k: v for k, v in example.items() if not k.startswith("_")}
+            record = {k: v for k, v in example.items() if k not in ("_canon", "_trace")}
             handle.write(json.dumps(record) + "\n")
     Path(args.manifest).write_text(json.dumps(manifest, indent=1))
 
@@ -239,12 +339,29 @@ def main() -> int:
         if num_turns is not None and model_calls != num_turns:
             branch_ok = False
             break
+    phase_leak = sum(1 for e in examples for m in e["messages"] if m["role"] == "user" and m["content"].startswith("PHASE "))
+    system_prompts = {m["content"] for e in examples for m in e["messages"] if m["role"] == "system"}
+    tool_pair_ok = True
+    for e in examples:
+        pending = []
+        for m in e["messages"]:
+            if m["role"] == "assistant" and m.get("tool_calls"):
+                pending = [c["id"] for c in m["tool_calls"]]
+            elif m["role"] == "tool" and pending:
+                if m.get("tool_call_id") == pending[0]:
+                    pending.pop(0)
+        if pending:
+            tool_pair_ok = False
+            break
     checks = [
         ("mask is exactly the assistant turns", masked_ok),
         ("tool results are context, never trained", tool_context_untrained),
         ("every example carries provenance", all(e["source"]["run"] for e in examples)),
         ("manifest records the transformation", bool(manifest["transformation"]["filter"])),
         ("the canonical branch is the sampled path (no duplicate prefixes)", branch_ok),
+        ("no harness phase prompt in the view", phase_leak == 0),
+        ("one system prompt across the view", len(system_prompts) <= 1),
+        ("every tool call is answered by its tool result", tool_pair_ok),
     ]
     for name, ok in checks:
         print("  [%s] %s" % ("PASS" if ok else "FAIL", name))

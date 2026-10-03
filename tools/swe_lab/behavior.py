@@ -142,7 +142,7 @@ def main() -> int:
     print(header % ("tier", "harn", "solv", "n", "edit@", "test@", "insp1st", "tstAft", "repair", "noWr", "calls"))
     cells = defaultdict(list)
     for row in rows:
-        harness = "H_D" if "hD" in row["run"] else "H_A"
+        harness = "H_D" if "hd" in row["run"].lower() else "H_A"
         cells[(row["tier"], harness)].append(row)
 
     for tier in args.tier:

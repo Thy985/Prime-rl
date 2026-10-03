@@ -1,84 +1,93 @@
-# Cross-model replication -- partial, and what it does and does not license
+# Cross-model replication: H_A vs H_D on a second model
 
 Goal: is the H_D > H_A effect a property of the harness, or an interaction with the one
 model it was found on (`9router/dots3-note-prev`)?
 
-Target design: 2 models x 2 harnesses x 2 tiers (tier3, tier5) x 24 episodes, holding
-taskset, patch mode, subprocess runtime, `max_turns = 4` and `temperature = 0.0` fixed.
+Design: 2 models x 2 harnesses x 2 tiers (tier3, tier5) x 24 episodes, holding taskset,
+patch mode, subprocess runtime, `max_turns = 4` and `temperature = 0.0` fixed. Configs in
+`eval_patch_m2_budget.toml` (H_A) and `eval_patch_m2_hd.toml` (H_D).
 
-Second model: `sensenova/glm-5.2` -- a named GLM model, different family and training
-lineage from dots3-note-preview. Chosen over the other candidates on capability, since a
-model that cannot do the task cannot discriminate a harness effect.
+Second model: `openrouter/stealth/space-bunny-alpha`. Chosen on regime, not on label:
+tier3 H_A measures 6%, so there is headroom for H_D to move. Two earlier candidates were
+rejected because they could not discriminate a harness effect:
+`openrouter/cohere/north-mini-code:free` sits at the floor (15 valid, 0 solved, every
+episode `no_write`), and `sensenova/glm-5.2` saturates the tier (79% H_A, 100% H_D on
+6 episodes, no headroom left).
 
-## Result (3 repeats pooled, n=8 per run, -c 1)
+## Solve rates
 
 | model | tier3 H_A | tier3 H_D | tier5 H_A | tier5 H_D |
 | --- | --- | --- | --- | --- |
 | dots3-note-prev | 5/24 = 21% | 14/24 = 58% | 1/24 = 4% | 4/24 = 17% |
-| glm-5.2 | 19/24 = 79% | 6/6 = 100% | 1/1 | no valid episode |
+| space-bunny-alpha | 3/47 = 6% | 16/40 = 40% | 2/45 = 4% | 5/23 = 22% |
+| glm-5.2 | 19/24 = 79% | 6/6 = 100% | no data | no data |
 
-tier3 direction is consistent with the dots3 result. **That is as far as it goes.** The
-H_D cell has n=6, and tier5 has no usable data at all, so this is a direction read, not a
-replication. It does not license "observed on at least two models".
+`valid` is the denominator: episodes ending on a rate-limit or transport failure are
+excluded, because those failures measure the provider, not the harness.
 
-## The finding that does survive
+H_D > H_A on **both** tiers, with dots3's direction reproduced on both:
 
-**The same tier is a different difficulty for each model.** On identical tasks, budget,
-verifier and runtime:
+    tier3: dots3  +37 points (21% -> 58%)     space-bunny  +34 ( 6% -> 40%)
+    tier5: dots3  +13 points ( 4% -> 17%)     space-bunny  +18 ( 4% -> 22%)
 
-    dots3-note-prev  tier3 H_A = 21%     (23 of 24 episodes fail)
-    glm-5.2          tier3 H_A = 79%     ( 5 of 24 episodes fail)
+That upgrades the claim from "found on dots3" to "observed on two models", and it covers
+the tier where the effect was smallest on dots3 (tier5) -- the harder half to reproduce,
+since H_A sits near zero there and any positive H_D number is noise-adjacent.
 
-The harness effect was discovered in the first regime and has almost no headroom in the
-second: if a model already solves the task 79% of the time unassisted, the most H_D can
-contribute is the remaining 21 points, and the most it can *lose* is nothing. So the
-question is not simply "does the effect replicate", it is **where does it replicate** --
-and the answer the data supports is: it is measurable where the model is failing but
-capable, and it compresses as the model's unassisted rate rises. That is a model-dependent
-dependence of magnitude, not a sign flip, and it is a more useful thing to know than a
-flat replication would have been.
+## The behaviour replicates too
 
-It also sharpens the Phase 3.6 result. dots3's tier3 failures were *unverified edits*
-(solved H_A episodes never run a test). glm-5.2's tier3 failures -- 5 episodes -- are
-almost certainly a different population, because a model that reaches 79% unassisted is
-mostly already closing the loop. The behaviour H_D supplies is only binding when the
-model is not already supplying it.
+Same action-sequence profile as `behavior.py`, space-bunny only (155 valid episodes):
 
-## Why the second model's n is small
+    tier3-regression-trap  H_A  yes      3   ...   tstAft= 0%  noWr= 0%
+    tier3-regression-trap  H_A  no      44   ...   tstAft= 9%  noWr=41%
+    tier3-regression-trap  H_D  yes     16   ...   tstAft=56%  noWr= 6%
+    tier3-regression-trap  H_D  no      24   ...   tstAft=62%  noWr= 0%
 
-`tenxun` routes 503 model ids. Only `9router/dots3-note-prev` has demonstrated sustained
-capacity for a full run at this workload. Measured sequential throughput:
+Two independent channels point at the same mechanism found on dots3:
 
-| model | 20 sequential calls | sustained |
-| --- | --- | --- |
-| `9router/dots3-note-prev` | 20/20 | ~32 calls/min |
-| `my-combo` | 20/20 | ~42 calls/min |
-| `openrouter/cohere/north-mini-code:free` | 17/20 | ~43 calls/min |
-| `sensenova/deepseek-v4-flash` | 3/4 (144 errors/run) | quota-bound |
-| `sensenova/glm-5.2` | 0/6 after screening | quota-bound |
+- `test_after_edit` rises from 9% (H_A unsolved) to 56-62% (H_D), against 0% to 64% on
+  dots3. tier3 punishes an unverified edit: its trap is a change that looks correct and
+  breaks a previously passing test, so an edit with no following test scores the same as
+  a wrong one.
+- `no_write` collapses from 41% (H_A unsolved) to 0% (H_D unsolved). H_D's read-only
+  recon turn keeps the model off the inspect-and-leave branch that is half of H_A's
+  failure mode.
 
-A 48-episode run needs ~192 model calls; every secondary provider exhausts its quota
-partway through, and exhausted episodes end `stop=ProviderError` with `reward=0.000`.
-`frontier.py` excludes them from the denominator, correctly -- a rate-limit failure
-measures the provider, not the harness -- but the n is gone. At `-c 4` glm-5.2 gave 0/24
-valid on both tiers; at `-c 1` with n=8 it retained 8/8 on tier3 and 3/3 on tier3 H_D, so
-concurrency and burst size, not the model, drive the loss. verifiers has no throttle knob:
-`-c` is the only concurrency control, and the client's retry storm ("reset after 2s")
-amplifies exhaustion rather than absorbing it.
+On tier5 the channel differs: H_D's gain does not come from `test_after_edit` (22% H_D
+unsolved vs 28% H_A unsolved) but from editing at all -- `no_write` 0% vs 21% -- which
+matches the earlier finding that tier5's binding constraint is exploration budget, not
+sequencing.
 
-## Candidates rejected on capability, not just quota
+## Magnitude is model-dependent, direction is not
 
-- `openrouter/cohere/north-mini-code:free` -- 15 valid tier3 episodes, **0 solved**, every
-  one `no_write`: it inspects, burns the budget, never edits. A floor measurement cannot
-  discriminate a harness effect.
-- `Tenxun/Deepseek-v4-flash` -- hangs on the first rollout at `-c 1` (15+ min), and reports
-  a hard `concurrent limit exceeded: running=10 max=6`.
-- `cl/*` -- the entire prefix returns 503 on this endpoint.
-- `my-combo` -- 20/20 and quota-tolerant, but it is a router, so the answering model is
-  not fixed across episodes and it cannot support a "which model" claim.
+The effect is measurable where the model is failing but capable, and it does not vanish as
+the unassisted rate rises to ~80%, where glm-5.2 had no tier3 headroom left to show it:
 
-## To actually finish this
+    dots3  H_A = 21%  ->  H_D gains +37 points
+    bunny  H_A =  6%  ->  H_D gains +34 points
+    glm    H_A = 79%  ->  no headroom, H_D cell unusable
 
-A second model with quota headroom for ~400 calls. That is an access question, not a
-design question -- the design is written and the configs are in `eval_patch_m2_*.toml`.
-With headroom, the run is 6 invocations of `-c 4 --run.name m2-{hA,hD}{1,2,3}`.
+glm-5.2's 79% H_A is a different population than the other two: a model that already
+closes the loop unassisted has little for H_D to supply. That is why a cross-model claim
+needs a second model in the failing-but-capable band, not a stronger model.
+
+## Limits of this replication
+
+n is not equal across cells. Three of the six runs hit the endpoint's quota ceiling and
+lost most or all episodes, so H_D pools two usable repeats (40 tier3, 23 tier5) while
+H_A pools two (47 tier3, 45 tier5), and the remaining tier5 H_D cell is a single repeat.
+Per-repeat wobble inside H_A is real (4.2% and 8.7% on tier3). The pooled gap (+34 /
++18) is large relative to that wobble, which is why the direction claim holds, but the
+point estimates should not be quoted as precise rates.
+
+## Endpoint facts worth recording
+
+- verifiers' model client has **no read timeout**; the rollout timeout is the only bound
+  and its default is 4 hours. One hung episode on space-bunny-alpha stalled a whole `-c 1`
+  run for 25 minutes at 40/48. `env.agent.timeout.rollout = 600` fixes it (~15x a normal
+  episode), failing the hung episode instead of blocking the run.
+- WSL inherits `http_proxy`/`ALL_PROXY` pointing at the Windows host's proxy port. When
+  the proxy is down, every request fails with connection refused rather than a provider
+  error, which is easy to misread as the model being unreachable.
+- Quota exhaustion does not always read as a clean 429. At `-c 4` it destroyed both tiers
+  on every candidate tried; at `-c 1` a single run loses 0-24 of 48 episodes at random.

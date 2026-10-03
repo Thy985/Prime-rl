@@ -220,6 +220,12 @@ def build(
                 "stripped_phase_messages": stripped,
                 "system_prompt_normalized": sys_norm,
                 "trimmed_unanswered_turns": trimmed,
+                # The trace's flat tool list is the union over the episode, so a staged
+                # run contributes the same bash+edit surface a free run does, even though
+                # its recon turn advertised bash alone. Rendering the union is the point:
+                # the eval-time prompt must match, and the eval advertises both tools
+                # from turn 1.
+                "tool_defs": trace.get("tools") or [],
                 "source": {
                     "run": episode["run"],
                     "episode_id": episode["episode_id"],
@@ -362,6 +368,7 @@ def main() -> int:
         ("no harness phase prompt in the view", phase_leak == 0),
         ("one system prompt across the view", len(system_prompts) <= 1),
         ("every tool call is answered by its tool result", tool_pair_ok),
+        ("every example declares its tools", all(e.get("tool_defs") for e in examples)),
     ]
     for name, ok in checks:
         print("  [%s] %s" % ("PASS" if ok else "FAIL", name))

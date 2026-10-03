@@ -1,0 +1,59 @@
+# Phase 4C -- SFT on D_AD (H_A + H_D successful trajectories).
+#
+# The experiment this config runs:
+#
+#   Base   ->  H_A harness, no training        (55% pooled, recorded)
+#   pi_A   ->  H_A harness, trained on D_A
+#   pi_D   ->  H_A harness, trained on D_D
+#   pi_AD  ->  H_A harness, trained on D_AD     (this config)
+#
+# All three are evaluated under the SAME H_A harness with no phase protocol
+# (eval_patch_sft.toml). The question is whether the behavior the staged harness
+# induced survives being distilled into the policy and then removed from the loop.
+#
+# The dataset is a local parquet written by tools/swe_lab/sft_export.py:
+#   messages   the canonical branch, PHASE prompts stripped, system prompt
+#              normalized to the eval-time H_A prompt, dangling tool turns trimmed
+#   tool_defs  bash + edit, the eval-time tool surface
+#   source     provenance
+#
+# Loss is assistant-only (LossMaskConfig defaults). The rows are whole-chat samples,
+# so every assistant turn in the episode contributes, not just the last one.
+#
+#   uv run sft @ tools/swe_lab/sft_phase4.toml --run.name pi-AD
+#
+# 147 rows / 512 assistant turns is small. Treat max_steps as a sanity run, not a
+# converged SFT; the tier distribution is the natural solve-rate distribution, not
+# stratified (tier3=19, tier4=27, tier5=5), and any tier-level reading has to
+# account for that.
+
+max_steps = 30
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+
+[data]
+name = "outputs/swe_runs/sft_AD/data"
+type = "sft"
+seq_len = 8192
+batch_size = 4
+
+[optim]
+lr = 2e-5
+
+[eval]
+interval = 30
+num_examples = 8
+
+[eval.sampling]
+max_completion_tokens = 2048
+
+[[eval.source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+
+[inference]

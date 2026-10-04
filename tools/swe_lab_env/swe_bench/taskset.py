@@ -197,11 +197,30 @@ class SWERealConfig(vf.TasksetConfig):
     """Restrict to these instance_ids; empty means every instance in the manifest."""
 
 
+# H_A' control: the behavioural content of the three H_D phase prompts, with no
+# phase numbering, no per-turn gating and no edit-tool removal. It isolates how much of
+# the H_D effect is static instruction ("inspect, then edit early, then verify") versus
+# runtime-enforced structure. Set SWE_REAL_H_A_PRIME=1 to append it.
+H_A_PRIME_INSTRUCTION = (
+    "How to spend these turns: first spend a turn or two with bash locating the code "
+    "that matters, then make the edit on disk as early as possible instead of only "
+    "describing the change, then re-run the failing tests, read what they print, and "
+    "repair whatever still fails before you run out of turns."
+)
+
+
+def system_prompt() -> str:
+    if os.environ.get("SWE_REAL_H_A_PRIME") == "1":
+        return SYSTEM_PATCH + "\n\n" + H_A_PRIME_INSTRUCTION
+    return SYSTEM_PATCH
+
+
 class SWERealTaskset(vf.Taskset[SWERealTask, SWERealConfig]):
     def load(self) -> list[SWERealTask]:
         rows = json.loads(_MANIFEST.read_text())["instances"]
         wanted = set(self.config.instances)
         tasks = []
+        prompt = system_prompt()
         for index, row in enumerate(rows):
             if wanted and row["instance_id"] not in wanted:
                 continue
@@ -211,7 +230,7 @@ class SWERealTaskset(vf.Taskset[SWERealTask, SWERealConfig]):
                         idx=index,
                         name=row["instance_id"],
                         prompt=row["problem_statement"],
-                        system_prompt=SYSTEM_PATCH,
+                        system_prompt=prompt,
                         instance_id=row["instance_id"],
                         repo=row["repo"],
                         cached_repo=row["cached_repo"],

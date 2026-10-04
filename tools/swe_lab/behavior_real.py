@@ -6,7 +6,12 @@ patch) rather than the swe-lab target fraction. The action-kind classification i
 behavior.py's, plus the django runner (`tests/runtests.py ...` counts as a test
 run, which frontier.TEST_RE does not cover).
 
-usage: uv run python tools/swe_lab/behavior_real.py [--pattern ...] [--top N]
+A --pattern may be a bare glob (the harness is then guessed from the run name, as
+before) or LABEL=GLOB, which labels the cell explicitly. The H_A' run is named
+rl-hAp*, so the bare rl-hA* glob would swallow it; labelling keeps the triangle
+(H_A / H_A' / H_D) separable without renaming past runs.
+
+usage: uv run python tools/swe_lab/behavior_real.py [--pattern [LABEL=]GLOB ...] [--top N]
 """
 
 from __future__ import annotations
@@ -73,15 +78,16 @@ def solved(trace: dict) -> bool:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--pattern", nargs="*", default=list(DEFAULT_PATTERNS))
+    ap.add_argument("--pattern", nargs="*", default=list(DEFAULT_PATTERNS), help="[LABEL=]GLOB")
     ap.add_argument("--top", type=int, default=4, help="example sequences per cell")
     args = ap.parse_args()
 
     rows = []
-    for pattern in args.pattern:
+    for spec in args.pattern:
+        label, _, pattern = spec.rpartition("=")
         for run_dir in all_runs(pattern):
             run = run_dir.name
-            harness = "H_D" if "hd" in run.lower() else "H_A"
+            harness = label or ("H_D" if "hd" in run.lower() else "H_A")
             for trace in read_traces(run_dir):
                 rows.append(
                     {
@@ -95,6 +101,7 @@ def main() -> int:
     if not rows:
         print("no traces matched", args.pattern)
         return 0
+    print(f"patterns: {args.pattern}")
 
     print("== per (harness, instance, solved) ==")
     by = defaultdict(list)

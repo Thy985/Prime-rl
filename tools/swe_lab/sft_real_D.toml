@@ -1,0 +1,64 @@
+# Real-SWE distillation sanity run: Qwen3-0.6B SFT on D_D.
+#
+# Teacher: dots3-note-prev, H_D harness, swe-lab tiers, solved only (81 rows /
+# ~279 assistant turns; outputs/swe_runs/view_D.jsonl + manifest). The view was
+# built with training_view.py: canonical branch only, PHASE user messages
+# stripped, system prompt normalized to the eval-time H_A prompt, dangling
+# unanswered tool turns trimmed, assistant-only loss mask, reasoning_content
+# excluded. Parquet: outputs/swe_runs/sft_D/data (sft_export.py).
+#
+# The eval question is cross-domain: train on swe-lab behavior, then measure on
+# real SWE-bench tasks under the bare H_A harness (bash + edit, max_turns=4,
+# no phase protocol). If H_D's "recon then write, don't burn the budget on
+# inspection" shape distilled into the policy, the student's no_write rate on
+# real tasks should drop relative to the untrained checkpoint, and its solves
+# should show the write-first shape -- not solve at teacher rates (0.6B has no
+# such capability budget).
+#
+# Online eval is disabled on purpose (no [eval] block): in-training evaluation
+# starts a parallel inference server, and a single 8 GB GPU cannot run the
+# trainer and the server at once. Eval runs separately after training
+# (eval_sft_local.toml + a local vLLM server on :8000).
+#
+#   uv run sft @ tools/swe_lab/sft_real_D.toml --run.name pi-real-D --clean
+#
+# 30 steps x batch 4 = 120 row-visits over 81 rows: a sanity run, not converged.
+
+max_steps = 20
+
+[model]
+name = "PrimeIntellect/Qwen3-0.6B"
+
+# LoRA: the 11 GB RAM machine cannot hold a full-parameter AdamW (fp32 moments
+# offloaded to CPU ~4.8 GB) plus a dcp save of the fp32 weights without the WSL
+# kernel reaping the trainer under memory pressure (observed SIGTERM mid-save).
+# Rank-8 LoRA on all linear layers is plenty to transfer the coarse behavioral
+# structure (write-first, recon-before-edit) we are verifying.
+[model.lora]
+rank = 8
+target_modules = [
+  "q_proj",
+  "k_proj",
+  "v_proj",
+  "o_proj",
+  "gate_proj",
+  "up_proj",
+  "down_proj",
+]
+
+[data]
+name = "outputs/swe_runs/sft_D/data"
+type = "sft"
+seq_len = 8192
+batch_size = 2
+
+[optim]
+lr = 2e-5
+
+# A present [ckpt] block (defaults) makes the trainer save the final checkpoint
+# as a torch.distributed.checkpoint tree under outputs/<run>/checkpoints/<step>/
+# trainer. With interval unset there is no mid-run saving; only the final state
+# is written, which is all the serve step needs (convert with
+# tools/swe_lab/ckpt_to_hf.py).
+[ckpt]
+

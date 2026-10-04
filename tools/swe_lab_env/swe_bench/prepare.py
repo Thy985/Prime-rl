@@ -73,6 +73,38 @@ def _oracle_files(test_patch: str) -> list[str]:
     return sorted(set(files))
 
 
+def _resolve_nodeids(entry: dict) -> dict | None:
+    """Address every oracle test by pytest nodeid, or None if any cannot be located.
+
+    SWE-bench records sympy's tests as bare function names (`test_point3D`), which
+    pytest cannot run as-is; the official harness runs them by selecting the name
+    inside the test files its own test_patch touches. We do the same and keep the
+    one-process-per-test invariant by resolving each name to the single oracle file
+    that defines it.
+    """
+    if entry.get("profile") != "pytest":
+        return entry
+
+    def locate(name: str) -> str | None:
+        if "::" in name or "/" in name:
+            return name
+        for rel in entry["oracle_files"]:
+            path = Path(entry["cached_repo"]) / rel
+            if not path.is_file():
+                continue
+            if re.search(rf"^\s*def\s+{re.escape(name)}\b", path.read_text(errors="replace"), re.M):
+                return f"{rel}::{name}"
+        return None
+
+    resolved = dict(entry)
+    for key in ("FAIL_TO_PASS", "PASS_TO_PASS"):
+        names = [locate(n) for n in entry[key]]
+        if any(n is None for n in names):
+            return None
+        resolved[key] = names
+    return resolved
+
+
 def _clone(repo: str, commit: str) -> Path:
     dest = REPOS / f"{repo.replace('/', '-')}-{commit[:12]}"
     if dest.is_dir():
@@ -102,6 +134,12 @@ def main() -> int:
     ap.add_argument("--npass", type=int, default=8, help="max PASS_TO_PASS count")
     ap.add_argument("--include", default="", help="comma-separated instance ids (overrides --count)")
     ap.add_argument("--profile", default="django", help="test runner profile: django|pytest")
+    ap.add_argument(
+        "--python",
+        default="",
+        help="interpreter holding this repo's test deps (default: SWE_REAL_PY)",
+    )
+    ap.add_argument("--out", type=Path, default=MANIFEST, help="candidates file to write")
     args = ap.parse_args()
 
     rows = _load_rows()
@@ -130,32 +168,38 @@ def main() -> int:
     entries = []
     for r in usable:
         dest = _clone(r["repo"], r["base_commit"])
-        entries.append(
-            {
-                "instance_id": r["instance_id"],
-                "repo": r["repo"],
-                "base_commit": r["base_commit"],
-                "environment_setup_commit": r["environment_setup_commit"],
-                "version": r["version"],
-                "cached_repo": str(dest),
-                "profile": args.profile,
-                "problem_statement": r["problem_statement"],
-                "FAIL_TO_PASS": json.loads(r["FAIL_TO_PASS"]),
-                "PASS_TO_PASS": json.loads(r["PASS_TO_PASS"]),
-                "oracle_files": _oracle_files(r["test_patch"]),
-                "test_patch": r["test_patch"],
-            }
-        )
+        entry = {
+            "instance_id": r["instance_id"],
+            "repo": r["repo"],
+            "base_commit": r["base_commit"],
+            "environment_setup_commit": r["environment_setup_commit"],
+            "version": r["version"],
+            "cached_repo": str(dest),
+            "profile": args.profile,
+            "python": args.python or os.environ.get("SWE_REAL_PY", "python"),
+            "problem_statement": r["problem_statement"],
+            "FAIL_TO_PASS": json.loads(r["FAIL_TO_PASS"]),
+            "PASS_TO_PASS": json.loads(r["PASS_TO_PASS"]),
+            "oracle_files": _oracle_files(r["test_patch"]),
+            "test_patch": r["test_patch"],
+        }
+        entry = _resolve_nodeids(entry)
+        if entry is None:
+            print(f"  {r['instance_id']:<28} DROPPED (no nodeid for every oracle test)")
+            continue
+        entries.append(entry)
 
-    MANIFEST.write_text(
-        json.dumps({"python": os.environ.get("SWE_REAL_PY", "python"), "instances": entries}, indent=1)
+    args.out.write_text(
+        json.dumps(
+            {"python": args.python or os.environ.get("SWE_REAL_PY", "python"), "instances": entries}, indent=1
+        )
     )
     for e in entries:
         print(
             f"  {e['instance_id']:<28} nfail={len(e['FAIL_TO_PASS'])} "
             f"npass={len(e['PASS_TO_PASS'])} oracle={e['oracle_files']}"
         )
-    print(f"\n{MANIFEST}: {len(entries)} candidates (verify.py gates them into manifest.json)")
+    print(f"\n{args.out}: {len(entries)} candidates (verify.py gates them into manifest.json)")
     return 0
 
 

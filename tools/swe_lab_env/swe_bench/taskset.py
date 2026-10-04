@@ -39,6 +39,7 @@ from tempfile import TemporaryDirectory
 import verifiers.v1 as vf
 
 _MANIFEST = Path(__file__).resolve().parent / "manifest.json"
+SWE_REAL_PY = os.environ.get("SWE_REAL_PY", "python")
 
 SYSTEM_PATCH = (
     "You are a coding agent working in a real open-source repository, checked out "
@@ -64,6 +65,7 @@ class SWERealData(vf.TaskData):
     cached_repo: str = ""
     """Local checkout of the repo at the instance's base_commit."""
     profile: str = "django"
+    python: str = ""
     """`django` or `pytest` -- selects the runner and the test-name format."""
     problem_statement: str = ""
     fail_to_pass: list[str] = []
@@ -120,11 +122,18 @@ class SWERealTask(vf.Task[SWERealData]):
         return rels
 
     def _run_test(self, tree: Path, target: str) -> bool:
-        """One test as one process; pass/fail is the exit code."""
+        """One test as one process; pass/fail is the exit code.
+
+        The interpreter comes from the instance, not the environment: one checkout
+        cannot share a test dependency set across repos (the pilot's single-repo
+        rule), so a sympy instance runs under its own venv while django runs under
+        the django one.
+        """
+        python = self.data.python or SWE_REAL_PY
         argv = (
-            [SWE_REAL_PY, "tests/runtests.py", target, "--parallel=1"]
+            [python, "tests/runtests.py", target, "--parallel=1"]
             if self.data.profile == "django"
-            else [SWE_REAL_PY, "-m", "pytest", "-q", target]
+            else [python, "-m", "pytest", "-q", target]
         )
         env = {
             "PATH": os.environ.get("PATH", ""),
@@ -235,6 +244,7 @@ class SWERealTaskset(vf.Taskset[SWERealTask, SWERealConfig]):
                         repo=row["repo"],
                         cached_repo=row["cached_repo"],
                         profile=row["profile"],
+                        python=row.get("python") or SWE_REAL_PY,
                         problem_statement=row["problem_statement"],
                         fail_to_pass=list(row["FAIL_TO_PASS"]),
                         pass_to_pass=list(row["PASS_TO_PASS"]),
@@ -247,5 +257,4 @@ class SWERealTaskset(vf.Taskset[SWERealTask, SWERealConfig]):
         return tasks
 
 
-SWE_REAL_PY = os.environ.get("SWE_REAL_PY", "python")
 __all__ = ["SWERealTaskset"]

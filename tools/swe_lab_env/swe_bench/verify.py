@@ -23,6 +23,7 @@ usage:
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -47,30 +48,37 @@ def _norm_django(name: str) -> str:
     return m.group(2) if m else name
 
 
-def _run_test(tree: Path, target: str) -> bool:
+def _run_test(tree: Path, target: str, profile: str, python: str) -> bool:
     env = {
         "PATH": os.environ.get("PATH", ""),
         "PYTHONPATH": str(tree),
         "HOME": os.environ.get("HOME", "/root"),
         "LANG": "C.UTF-8",
     }
-    proc = subprocess.run(
-        [SWE_REAL_PY, "tests/runtests.py", target, "--parallel=1"],
-        cwd=str(tree), env=env, capture_output=True, timeout=300,
+    argv = (
+        [python, "tests/runtests.py", target, "--parallel=1"]
+        if profile == "django"
+        else [python, "-m", "pytest", "-q", target]
     )
+    proc = subprocess.run(argv, cwd=str(tree), env=env, capture_output=True, timeout=300)
     return proc.returncode == 0
 
 
 def _gate(row: dict, gold: dict) -> dict:
     src = Path(row["cached_repo"])
     iid = row["instance_id"]
-    norm = _norm_django
+    profile = row.get("profile", "django")
+    python = row.get("python") or SWE_REAL_PY
+    norm = _norm_django if profile == "django" else (lambda name: name)
+
+    def run(tree: Path, target: str) -> bool:
+        return _run_test(tree, target, profile, python)
     with tempfile.TemporaryDirectory() as td:
         tree = Path(td) / "repo"
         shutil.copytree(src, tree)
 
         # 3. pristine base: P2P must pass
-        p2p_pristine = [(n, _run_test(tree, norm(n))) for n in row["PASS_TO_PASS"]]
+        p2p_pristine = [(n, run(tree, norm(n))) for n in row["PASS_TO_PASS"]]
 
         # 1. test_patch applies
         (tree / ".oracle.patch").write_text(row["test_patch"])
@@ -81,17 +89,17 @@ def _gate(row: dict, gold: dict) -> dict:
             return {"instance_id": iid, "ok": False, "reason": "test_patch does not apply"}
 
         # 2. F2P must fail at base+test_patch
-        f2p_base = [(n, _run_test(tree, norm(n))) for n in row["FAIL_TO_PASS"]]
+        f2p_base = [(n, run(tree, norm(n))) for n in row["FAIL_TO_PASS"]]
         # info: P2P at base+test_patch (may fail when the patch adds infra)
-        p2p_base = [(n, _run_test(tree, norm(n))) for n in row["PASS_TO_PASS"]]
+        p2p_base = [(n, run(tree, norm(n))) for n in row["PASS_TO_PASS"]]
 
         # 4+5. gold: F2P passes, P2P passes
         (tree / ".gold.patch").write_text(gold[iid])
         gold_apply = subprocess.run(
             ["git", "apply", ".gold.patch"], cwd=str(tree), capture_output=True, timeout=120
         )
-        f2p_gold = [(n, _run_test(tree, norm(n))) for n in row["FAIL_TO_PASS"]]
-        p2p_gold = [(n, _run_test(tree, norm(n))) for n in row["PASS_TO_PASS"]]
+        f2p_gold = [(n, run(tree, norm(n))) for n in row["FAIL_TO_PASS"]]
+        p2p_gold = [(n, run(tree, norm(n))) for n in row["PASS_TO_PASS"]]
 
     checks = {
         "p2p_pristine": all(ok for _, ok in p2p_pristine),
@@ -113,7 +121,16 @@ def _gate(row: dict, gold: dict) -> dict:
 
 
 def main() -> int:
-    rows = json.loads(CANDIDATES.read_text())["instances"]
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--candidates", type=Path, default=CANDIDATES, help="prepare.py output")
+    ap.add_argument("--out", type=Path, default=MANIFEST, help="gated manifest to write")
+    ap.add_argument(
+        "--merge",
+        action="store_true",
+        help="append the passing instances to --out instead of replacing its contents",
+    )
+    args = ap.parse_args()
+    rows = json.loads(args.candidates.read_text())["instances"]
     if not rows:
         sys.exit("no candidates; run prepare.py first")
     try:
@@ -136,8 +153,11 @@ def main() -> int:
               + ("" if r["ok"] else "  DROPPED"))
 
     passed = [row for row, r in zip(rows, results) if r["ok"]]
-    MANIFEST.write_text(json.dumps({"python": SWE_REAL_PY, "instances": passed}, indent=1))
-    print(f"\n{MANIFEST}: {len(passed)}/{len(rows)} instances passed the gate")
+    existing = json.loads(args.out.read_text())["instances"] if (args.merge and args.out.exists()) else []
+    known = {e["instance_id"] for e in existing}
+    merged = existing + [row for row in passed if row["instance_id"] not in known]
+    args.out.write_text(json.dumps({"python": SWE_REAL_PY, "instances": merged}, indent=1))
+    print(f"\n{args.out}: {len(passed)}/{len(rows)} passed the gate ({len(merged)} total)")
     return 0
 
 

@@ -62,57 +62,66 @@ unavailable-for-free), `max_turns = 4`, temperature 0.0, subprocess runtime, 2
 episodes per instance per harness, `-c 1`, `timeout.rollout = 600`. 20 episodes,
 all valid, zero ProviderErrors.
 
+After the first 20 episodes the two carrying instances (11066, 11206) were topped
+up to 5 episodes per harness each (`-n 2 -r 3` on the same configs), so the table
+below mixes 5-episode cells on those two and 2-episode cells on the rest (32
+episodes total).
+
 | instance | H_A | H_D |
 |---|---|---|
-| django-11066 | 1/2 | 2/2 |
-| django-11206 | 0/2 | 1/2 |
+| django-11066 | 2/5 | 5/5 |
+| django-11206 | 0/5 | 2/5 |
 | django-11333 | 0/2 | 0/2 |
 | django-15127 | 0/2 | 0/2 |
 | django-16901 | 0/2 | 0/2 |
-| **total** | **1/10 = 10%** | **3/10 = 30%** |
+| **total** | **2/16 = 12%** | **7/16 = 44%** |
 
-The differential H_D - H_A = **+20 points on real SWE-bench Verified**, the same
-direction as the swe-lab tiers (tier3 +34 on space-bunny, +37 on dots3). All four
-solves were inspected: find the buggy source, read it, one targeted `edit` at the
-bug location (e.g. `transaction.atomic(using=db)` for 11066, the Decimal branch of
-`numberformat` for 11206), re-read the hunk — genuine minimal fixes, rewarded by
-the never-seen oracle test patch.
+The differential H_D - H_A = **+32 points on real SWE-bench Verified** (+20 on
+the first 20 episodes alone), the same direction as the swe-lab tiers (tier3 +34
+on space-bunny, +37 on dots3). The topped-up cells are decisive: on 11066, H_D is
+5/5 — the model solves it every time — against H_A's 2/5, and on 11206 it is 2/5
+against 0/5. All seven solves were inspected: find the buggy source, read it, one
+targeted `edit` at the bug location (e.g. `transaction.atomic(using=db)` for
+11066, the Decimal branch of `numberformat` for 11206), re-read the hunk —
+genuine minimal fixes, rewarded by the never-seen oracle test patch.
 
 ## Behaviour profile (20 episodes)
 
 | cell | n | no_write | test_after_edit | calls |
 |---|---|---|---|---|
-| H_A unsolved | 9 | 67% | 0% | 3 |
-| H_A solved | 1 | 0% | 0% | 4 |
-| H_D unsolved | 7 | 43% | 0% | 3 |
-| H_D solved | 3 | 0% | 0% | 3 |
+| H_A unsolved | 14 | 57% | 0% | 3 |
+| H_A solved | 2 | 0% | 0% | 4 |
+| H_D unsolved | 9 | 33% | 0% | 3 |
+| H_D solved | 7 | 0% | 0% | 3 |
 
-Top sequences: H_A unsolved is dominated by pure `inspect x4` (6/9 episodes —
+Top sequences: H_A unsolved is dominated by pure `inspect x4` (8/14 episodes —
 studied the repo, never wrote); solved episodes (both harnesses) have the
-`write inspect write inspect` shape. No episode in either harness ever ran the
-test suite (`pytest`/`unittest`/`runtests.py`: zero occurrences across all 20
-traces).
+`write inspect write inspect` shape, and H_D's seven solves are 5x that exact
+shape. No episode in either harness ever ran the test suite
+(`pytest`/`unittest`/`runtests.py`: zero occurrences across all 32 traces).
 
 ## Interpretation
 
-The direction replicates on real tasks, but the mechanism differs from the
-swe-lab tiers. On the tiers, H_D's win was the verify turn (tier3 `test_after_edit`
+The direction replicates on real tasks, and the topped-up cells sharpen the
+mechanism. On the tiers, H_D's win was the verify turn (tier3 `test_after_edit`
 9% -> 56-62%, `no_write` 41% -> ~0%): the staged allocation pushed the model to
 run tests after editing. On these real django instances at 4 turns, the model
 never verifies under either harness; H_D's win is earlier and simpler — the phase
 protocol (recon / execute / verify wording and turn split) gets the model to
-commit edits at all (`no_write` 67% -> 43% among unsolved, and every solved
+commit edits at all (`no_write` 57% -> 33% among unsolved, and every solved
 episode wrote), while H_A's free allocation lets it spend all four turns
-inspecting. Both are instances of the same claim — H_D converts budget into
-repair action that H_A wastes — but through a different channel, so the real-task
-replication is a mechanism shift, not a copy.
+inspecting. The mechanism difference is visible in solve stability: H_D turns a
+one-shot solve (11066, H_A 2/5) into a near-deterministic one (11066, H_D 5/5),
+which is exactly the "budget -> repair action" claim — H_A's writes are not
+reliably preceded by a plan, H_D's phases force the write step. A mechanism
+shift, not a copy, but the same underlying claim.
 
 ## Limits
 
-- n = 10 episodes per harness; per-instance cells are n = 2. The 11066 and 11206
-  cells carry the whole effect (H_A 1/4 vs H_D 3/4); the harder instances
-  (11333/15127/16901) were 0/0 everywhere, which is the expected capability floor
-  for a small model on real SWE at 4 turns.
+- n = 16 episodes per harness, but cells are unbalanced: 11066/11206 at 5 per
+  harness, 11333/15127/16901 at 2 per harness (0/0 everywhere — the expected
+  capability floor for a small model on real SWE at 4 turns). The effect rides
+  entirely on 11066 (H_A 2/5 vs H_D 5/5) and 11206 (H_A 0/5 vs H_D 2/5).
 - Single repo (django), single model (dots3), single 4-turn budget. No test runs
   were observed in any episode, so the real-task `test_after_edit` channel is
   untested, not disproven.

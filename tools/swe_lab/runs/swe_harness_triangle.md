@@ -103,13 +103,15 @@ availability, not the command filter. (An earlier pass of this probe "found" 5
 refusals; those were false positives from loose keyword matching against file
 contents the agent had catted back. The matcher is now the exact refusal string.)
 
-**Instructions to verify are not obeyed, and that is the point.** The feedback
+**At the 4-turn budget, instructions to verify are not obeyed.** The feedback
 phase says "Re-run the failing tests and read the output. Repair what is still
 failing." In 16/16 feedback turns the model ran **no test at all**: 7x `cat -n`,
 4x `grep -rn`, 1x `sed -n`, 1x `cat`. Zero `runtests.py`, zero `pytest`, in any
-arm, at any budget. The same agent that never verifies when told to verify is the
-one for whom a static paragraph about verifying (H_A') does nothing. Instruction
-level control of this agent is inert; affordance level control is not.
+arm at T=4. The same agent that never verifies when told to verify is the one for
+whom a static paragraph about verifying (H_A') does nothing. Instruction-level
+control of this agent is inert at low budget; affordance-level control is not.
+(The budget sweep shows this changes: at T>=6 H_D runs tests in feedback, at T=8
+both arms verify -- see swe_budget_sweep.md.)
 
 **Edits per episode, by harness:**
 

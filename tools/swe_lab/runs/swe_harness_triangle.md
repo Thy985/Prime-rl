@@ -81,3 +81,43 @@ budget?), more real-SWE tasks, and a second model on real SWE.
       --pattern "H_A=outputs/rl-hA" "H_A=outputs/rl-hA-topup" \
                "H_A'=outputs/rl-hAp*" \
                "H_D=outputs/rl-hD" "H_D=outputs/rl-hD-topup"
+## Mechanism, turn by turn
+
+`tools/swe_lab/gating.py` reads the recorded traces and asks what the runtime
+actually did, rather than what the prompts said. Two things fall out, and one of
+them corrects the pilot's earlier reading of the mechanism.
+
+**Which tools were on the table.** In the recon request the tool list carried by
+the API call is `[bash]`; the edit tool is not merely discouraged, it is absent.
+From the execute phase on the list is `[bash, edit]`. So H_D is not a prompt that
+asks for edits -- it is a turn whose affordances contain no way to edit, followed
+by turns whose affordances do. Across the 16 pilot episodes: 32 recon turns all
+bash-only, then 16 execute and 16 feedback turns all with edit available.
+
+**The bash write refusal never fired.** The planner refuses tree-changing bash in
+the recon phase, but the recorded refusal string (`writes are not allowed in this
+turn`) appears **0 times** in 48 episodes. On real SWE the model does not try to
+patch the file with `sed`/`patch`/`>` during recon; it runs `find .` (24x) and
+`git log` (4x). So the load-bearing part of the enforcement is the tool
+availability, not the command filter. (An earlier pass of this probe "found" 5
+refusals; those were false positives from loose keyword matching against file
+contents the agent had catted back. The matcher is now the exact refusal string.)
+
+**Instructions to verify are not obeyed, and that is the point.** The feedback
+phase says "Re-run the failing tests and read the output. Repair what is still
+failing." In 16/16 feedback turns the model ran **no test at all**: 7x `cat -n`,
+4x `grep -rn`, 1x `sed -n`, 1x `cat`. Zero `runtests.py`, zero `pytest`, in any
+arm, at any budget. The same agent that never verifies when told to verify is the
+one for whom a static paragraph about verifying (H_A') does nothing. Instruction
+level control of this agent is inert; affordance level control is not.
+
+**Edits per episode, by harness:**
+
+| harness | acts | edit calls | edits per episode |
+|---------|------|-----------|-------------------|
+| H_A + H_A' | 127 | 4 | 0.13 |
+| H_D | 41 | 7 | 0.44 |
+
+H_D produces ~3.5x more edits per episode from the same model and the same tasks.
+That, rather than any difference in what the model was told, is the mechanism the
++32 points rides on.

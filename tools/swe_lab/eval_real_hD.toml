@@ -1,0 +1,51 @@
+# Real SWE-bench Verified pilot: H_D (staged recon/execute/verify) on 5 gated django instances.
+#
+# The 5 instances (11066, 11206, 11333, 15127, 16901) each passed the full
+# verify.py gate: test_patch applies at base, F2P fails at base+test_patch,
+# P2P passes at pristine base, gold fixes F2P with no P2P regression. So a 1.0
+# reward means the agent's tree, scored with the oracle test_patch applied, makes
+# every FAIL_TO_PASS and PASS_TO_PASS test pass -- the same contract swebench's
+# own harness validates.
+#
+# The prompt is the issue text only; the oracle test_patch is never shown to the
+# agent. setup() stages the base_commit checkout and strips refs to the gold fix.
+#
+#   SWE_REAL_PY=/tmp/swe_deps/django_env/bin/python \
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_hD.toml --run.name rl-hD -c 1 --clean
+#
+# num_examples=5 (all gated instances), group_size=2 -> 10 episodes per run.
+#
+# Model: 9router/dots3-note-prev (the original harness-effect model). The
+# replication model space-bunny-alpha hit OpenRouter's free-tier daily cap
+# (429 free-models-per-day-stealth, then 404 unavailable-for-free) on the
+# pilot day; dots3 is API-served and confirmed reachable on this endpoint.
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 2
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.harness.env = { SWE_LAB_PHASES = "1,2," }
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.timeout.rollout = 600
+# Run at -c 1 only: the endpoint's secondary providers rate-limit per provider
+# and -c 4 trips tpm/rpm limits (measured on this endpoint), ending episodes at
+# stop=ProviderError rather than measuring the harness. space-bunny-alpha holds
+# ~28 calls/min sequential. 10 episodes x ~4 turns ~= 40-60 calls, well inside
+# the measured quota envelope.
+#
+# timeout.rollout = 600 bounds a hung model call: the verifiers client has NO
+# read timeout and the default rollout timeout is 4h -- one hung episode stalled
+# a -c 1 run for 25+ min at 40/48 before this was set (see cross_model.md).

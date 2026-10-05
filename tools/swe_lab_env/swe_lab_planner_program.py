@@ -169,10 +169,15 @@ def looks_like_write(command):
     return bool(WRITE_COMMAND.search(command or ""))
 
 
-def phase_tools(phase, args):
-    """The tools advertised in `phase`: the plan phase gets no edit tool."""
+def phase_tools(phase, args, gate=True):
+    """The tools advertised in `phase`: with gating on, the plan phase gets no edit tool.
+
+    SWE_LAB_GATE=0 (H_P) keeps the tools identical in every phase -- the phase
+    prompts still claim the edit tool is absent, so the arm isolates whether the
+    prompt's claim alone changes behaviour.
+    """
     tools = [BASH_TOOL] if args.bash else []
-    if args.edit and phase != "plan":
+    if args.edit and (not gate or phase != "plan"):
         tools.append(EDIT_TOOL)
     if args.search:
         tools.append(SEARCH_TOOL)
@@ -291,16 +296,21 @@ async def phased_main():
         allocation = parse_allocation(os.environ.get("SWE_LAB_PHASES", DEFAULT_ALLOCATION))
         total = len(allocation)
         had_plan = any(name == "plan" for name, _ in allocation)
+        # 2x2 factor switches. Defaults are the recorded Harness D behaviour
+        # (prompts on, gate on). H_P sets SWE_LAB_GATE=0 (prompts kept, tools
+        # ungated); H_G sets SWE_LAB_PROMPTS=0 (gating kept, phase prompts off).
         quiet = bool(os.environ.get("SWE_LAB_QUIET"))
+        prompts = (not quiet) and os.environ.get("SWE_LAB_PROMPTS", "1") != "0"
+        gate = os.environ.get("SWE_LAB_GATE", "1") != "0"
         plan = ""
         for idx, (phase, max_calls) in enumerate(allocation, 1):
-            tools = phase_tools(phase, args) + mcp_tools
+            tools = phase_tools(phase, args, gate) + mcp_tools
             turns = max_calls if max_calls is not None else 0
-            if not quiet:
+            if prompts:
                 messages.append({"role": "user", "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
             messages, reply = await run_phase(
                 args, client, args.model, messages, tools, dispatch, servers, tool_client,
-                read_only=(phase == "plan"), max_calls=max_calls, quiet=quiet,
+                read_only=(phase == "plan" and gate), max_calls=max_calls, quiet=not prompts,
             )
             if phase == "plan":
                 plan = reply

@@ -1,0 +1,33 @@
+# 2x2 factor cell H_G: phase prompts OFF, edit gating ON.
+#
+# Same planner program and same allocation ("1,2,") and the same gate as H_D --
+# the recon request carries only bash, execute/feedback carry bash+edit, and
+# tree-changing bash is refused in recon -- but SWE_LAB_PROMPTS=0 suppresses the
+# phase prompts entirely: the model sees the neutral system prompt, the task,
+# and whatever tools the current turn happens to offer. This arm isolates the
+# pure affordance schedule from any prompt signalling.
+#
+# Same 20-instance wide set, T=4, one episode per instance (run with -n 20 -r 1).
+#
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_hG.toml --run.name rl-2x2-hG -c 1 --clean -n 20 -r 1
+
+model = "9router/dots3-note-prev"
+num_examples = 20
+group_size = 1
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.harness.env = { SWE_LAB_PHASES = "1,2,", SWE_LAB_PROMPTS = "0" }
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.timeout.rollout = 600

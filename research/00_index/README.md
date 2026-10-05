@@ -10,7 +10,7 @@ edited here; every conclusion resolves to a path, a commit, or a hash.
 
 | Layer | Contents | Mutation rule |
 | --- | --- | --- |
-| Raw evidence | `01_raw/` — git export, run dirs, traces, logs, AI sessions | **immutable**; verified by hash, not by hand |
+| Raw evidence | `01_raw/` — hashes of run dirs and session exports, plus the user-prompt extract | **immutable**; verified by hash, not by hand |
 | Normalized index | `00_index/`, `02_experiments/`, `05_process/`, `06_artifacts/` | canonical records, one per experiment/claim/decision |
 | Narrative | `04_synthesis/` | argues from the index; cites IDs, never re-derives |
 
@@ -22,10 +22,14 @@ superseded drafts. Neither is load-bearing for a claim.
 1. Read the claim row in `00_index/claim_evidence_matrix.md` -> note its ID.
 2. Follow its evidence IDs to the experiment record in `02_experiments/E0X_*.md`.
 3. The record points at config path, analysis script, run directory, commit.
-4. Raw values live under `01_raw/runs/<run>/monitors/file/metrics.jsonl`
-   (field `eval/swe-bench/effective/agent/pass@1`).
+4. Raw values live in the working tree at
+   `outputs/<run>/monitors/file/metrics.jsonl`
+   (field `eval/swe-bench/effective/agent/pass@1`). They are **not** copied
+   into `01_raw/` — `outputs/` is gitignored, so a copy would be untracked
+   and unauditable.
 5. `01_raw/manifest.tsv` hashes every run directory at freeze time, so a run
-   can be proven unchanged.
+   can be proven unchanged. Regenerable aggregates are in
+   `03_analysis/runs_inventory.tsv`.
 
 The one-line result and its ceiling:
 

@@ -1,0 +1,26 @@
+# Phase 8 cross-model replication on Tenxun/Deepseek-v4-flash.
+# Same harness, allocation, 20-instance wide set, T=6 as the dots3 Phase 7 runs.
+# Only the model changes.
+#
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_8_deeps_hA.toml.toml --run.name rl-8-deeps-hA -c 1 --clean -n 20 -r 1
+
+model = "Tenxun/Deepseek-v4-flash"
+num_examples = 20
+group_size = 1
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.harness.env = {SWE_LAB_PHASES = "1,2,", SWE_LAB_GATE = "0", SWE_LAB_PROMPTS = "0"}
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 6
+env.agent.timeout.rollout = 600

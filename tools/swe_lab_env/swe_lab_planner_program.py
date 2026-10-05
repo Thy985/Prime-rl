@@ -164,6 +164,9 @@ def banner_for(mode, phase, plan, had_plan, idx, total, turns, turn_no, budget):
         return "Phase: %s. Goal: %s." % (phase.upper(), ACTION_GOALS[phase])
     if mode == "phase":
         return phase_instruction(phase, plan, had_plan, idx, total, turns)
+    if mode == "replay":
+        return (phase_instruction(phase, plan, had_plan, idx, total, turns)
+                if turn_no % 2 == 1 else None)
     raise ValueError("unknown SWE_LAB_BANNER mode %r" % mode)
 
 

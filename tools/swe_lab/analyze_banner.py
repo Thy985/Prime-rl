@@ -49,6 +49,7 @@ ARMS = {
     "H_ACTION": ["outputs/rl-7-hAction"],
     "H_PHASE": ["outputs/rl-7-hPhase"],
     "H_SYS": ["outputs/rl-7-hSys"],
+    "H_REPLAY": ["outputs/rl-8-hReplay"],
 }
 
 PHASE_RE = "PHASE "

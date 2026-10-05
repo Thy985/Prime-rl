@@ -42,14 +42,14 @@ from behavior_real import real_call_kind, solved  # noqa: E402
 from frontier import read_traces  # noqa: E402
 
 ARMS = {
-    "H_A": ["outputs/rl-6c-hA-T6"],
-    "H_P": ["outputs/rl-6c-hP-T6"],
-    "H_ONCE": ["outputs/rl-7-hOnce"],
+    "H_A": ["outputs/rl-6c-hA-T6", "outputs/rl-8c-hA-s1", "outputs/rl-8c-hA-s2"],
+    "H_P": ["outputs/rl-6c-hP-T6", "outputs/rl-8c-hP-s1", "outputs/rl-8c-hP-s2"],
+    "H_ONCE": ["outputs/rl-7-hOnce", "outputs/rl-8c-hOnce-s1", "outputs/rl-8c-hOnce-s2"],
     "H_NEUTRAL": ["outputs/rl-7-hNeutral"],
     "H_ACTION": ["outputs/rl-7-hAction"],
     "H_PHASE": ["outputs/rl-7-hPhase"],
     "H_SYS": ["outputs/rl-7-hSys"],
-    "H_REPLAY": ["outputs/rl-8-hReplay"],
+    "H_REPLAY": ["outputs/rl-8-hReplay", "outputs/rl-8c-hReplay-s1", "outputs/rl-8c-hReplay-s2"],
 }
 
 PHASE_RE = "PHASE "

@@ -1,0 +1,21 @@
+# Wide real-SWE: H_hA on the expanded multi-repo task set (sympy + django),
+# same max_turns=4 and same model as the pilot. The instance list is the full
+# gated manifest; the pilot's 5-instance grid stays reproducible via
+# env.taskset.instances in eval_real_hA.toml / eval_real_hD.toml.
+
+model = "openrouter/stealth/space-bunny-alpha"
+num_examples = 20
+group_size = 2
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 8
+env.agent.timeout.rollout = 600

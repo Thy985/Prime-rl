@@ -51,8 +51,13 @@ Single task family (reverse-text), single base size (0.6B), single GPU, offline.
 Not an agent study; the transfer value is entirely procedural.
 
 ## Evidence
-- Commits (branch `exp/reverse-text-pipeline`): `8ce7e10f3`, `bc29623ca`,
-  `58996d1fb`, `0dc6fc314`, `b03fe4557`
+- Commits (branch `exp/reverse-text-pipeline`), chronological:
+  `8ce7e10f3` (09-28 trainer smoke) → `bc29623ca` (09-28 multi-step)
+  → `58996d1fb` (09-29 reward correlation + held-out eval)
+  → `0dc6fc314` (10-01 protocol contract + V1/V2/V3 harness)
+  → `b03fe4557` (10-01 held-out bodies dump).
+  `PLAN.md` records the E01 outcome from the analysis, not from the last run,
+  so the ledger is canonical and the commits are the instrumentation behind it.
 - Ledger: `tools/swe_lab/PLAN.md` §0 — the retraction table is the canonical
   record of E01's two retracted claims.
 - Runs (not result evidence): `outputs/sft-*`, `outputs/short-ovf*`,

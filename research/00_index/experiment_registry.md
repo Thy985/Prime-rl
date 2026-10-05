@@ -6,7 +6,7 @@ are hashed in `01_raw/manifest.tsv`.
 
 | ID | Question | Key control | Freeze evidence | Status |
 | --- | --- | --- | --- | --- |
-| E01_reverse_text | Can a learned capability be shaped by reward and survive a non-destructive update? | LoRA SFT + RL plumbing on reverse-text, reward ablation V1/V2/V3 | branch `exp/reverse-text-pipeline` (8 commits); `tools/swe_lab/PLAN.md` §0 | closed; two conclusions retracted |
+| E01_reverse_text | Can a learned capability be shaped by reward and survive a non-destructive update? | LoRA SFT + RL plumbing on reverse-text, reward ablation V1/V2/V3 | branch `exp/reverse-text-pipeline` (5 commits); `tools/swe_lab/PLAN.md` §0 | closed; two conclusions retracted |
 | E02_verifier_audit | Is the reward itself trustworthy before any capability claim? | Environment contract + Golden Episode + replay acceptance | `498fca529`, `b2698922c`, `56a6c91d1` | accepted |
 | E03_swe_micro | Does a graded task set separate the agent's behaviour? | Tiered ladder + per-tier audit + budget frontier | `57e81c8af`, `5ef3bf8ee`, `2755ba56f`, `a56e6ae13`, `6004a7559` | accepted |
 | E04_harness_ab | Does changing the tool set change the outcome? | Harness A (bash+edit) vs B (no edit) vs C (completion bound) | `d43b15861`, `af3bddf12`, `6a1177c45`, `d732e5ffd` | accepted with a retraction |

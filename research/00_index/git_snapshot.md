@@ -5,8 +5,8 @@
 - url: https://github.com/PrimeIntellect-ai/prime-rl (vendored; this is a fork working copy)
 - branch: `exp/swe-verifier-terrain`
 - experiment commit range: `86e9e8366..83c990b00` — **82 commits**, 2026-10-01 11:29 → 2026-10-06 06:37
-- parent of range (upstream base): `c28afbbae` — repository has 2574 commits total
-- parallel branch: `exp/reverse-text-pipeline` (7 experiment commits, E01)
+- parent of range (upstream base): `c28afbbae` — repository had 2574 commits when the snapshot was taken; 2576 after the archive commits
+- parallel branch: `exp/reverse-text-pipeline` (5 commits, E01)
 - freeze tag: `research-p8c-final` -> `a5975ac74eb8cba6aefc1965f1422b4cef2b4ddc`
 
 ## Freeze commit

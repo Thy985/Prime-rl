@@ -48,6 +48,7 @@ ARMS = {
     "H_NEUTRAL": ["outputs/rl-7-hNeutral"],
     "H_ACTION": ["outputs/rl-7-hAction"],
     "H_PHASE": ["outputs/rl-7-hPhase"],
+    "H_SYS": ["outputs/rl-7-hSys"],
 }
 
 PHASE_RE = "PHASE "
@@ -66,22 +67,25 @@ def banner_injections(trace: dict) -> dict:
     legitimately repeated goal line (H_ACTION re-injects the same goal each turn
     of a phase) is kept because it is the signal.
     """
-    counts = {"phase": 0, "neutral": 0, "action": 0, "total": 0, "raw": 0}
+    counts = {"phase": 0, "neutral": 0, "action": 0, "total": 0, "raw": 0, "system": 0}
     prev = None
     for node in trace.get("nodes") or []:
         message = node.get("message") or {}
-        if message.get("role") != "user":
+        role = message.get("role")
+        if role not in ("user", "system"):
             continue
         text = (message.get("content") or "")
-        if PHASE_RE in text:
-            kind = "phase"
-        elif text.startswith(NEUTRAL_RE) and "of" in text:
+        if text.startswith(NEUTRAL_RE) and "of" in text:
             kind = "neutral"
+        elif PHASE_RE in text:
+            kind = "phase"
         elif text.startswith(ACTION_RE):
             kind = "action"
         else:
-            continue
+            continue  # task prompt, the base system prompt, other
         counts["raw"] += 1
+        if role == "system":
+            counts["system"] += 1
         if text == prev:
             continue
         prev = text
@@ -202,6 +206,7 @@ def summarize(arm: str, dirs: list[str]) -> dict:
         "inj_neutral": statistics.mean(i["neutral"] for i in inj),
         "inj_action": statistics.mean(i["action"] for i in inj),
         "inj_total": statistics.mean(i["phase"] + i["neutral"] + i["action"] for i in inj),
+        "inj_system": statistics.mean(i["system"] for i in inj),
     }
     return out
 

@@ -140,6 +140,18 @@ def banner_mode():
     return os.environ.get("SWE_LAB_BANNER", "").strip().lower() or "full"
 
 
+def banner_role():
+    """The message role the banner is injected as.
+
+    SWE_LAB_BANNER_ROLE=system moves the same text into a system message. The
+    content and cadence are untouched, so user vs system isolates the message
+    role and position of the control-plane announcement from everything else
+    that Phase 7 varied.
+    """
+    role = os.environ.get("SWE_LAB_BANNER_ROLE", "").strip().lower()
+    return "system" if role == "system" else "user"
+
+
 def banner_for(mode, phase, plan, had_plan, idx, total, turns, turn_no, budget):
     """The banner text for completion turn_no (1-based), or None for no banner."""
     if mode == "full":
@@ -240,7 +252,7 @@ async def run_phase(args, client, model, messages, tools, dispatch, servers, too
         if banner is not None:
             text = banner(start_turn + calls + 1)
             if text:
-                messages.append({"role": "user", "content": text})
+                messages.append({"role": banner_role(), "content": text})
         completion, messages = await compactor.complete(messages)
         calls += 1
         message = completion.choices[0].message
@@ -346,7 +358,7 @@ async def phased_main():
             tools = phase_tools(phase, args, gate) + mcp_tools
             turns = max_calls if max_calls is not None else 0
             if prompts and mode == "full":
-                messages.append({"role": "user", "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
+                messages.append({"role": banner_role(), "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
 
             def banner_fn(turn_no, _phase=phase, _idx=idx, _turns=turns):
                 return banner_for(mode, _phase, plan, had_plan, _idx, total, _turns, turn_no, budget)

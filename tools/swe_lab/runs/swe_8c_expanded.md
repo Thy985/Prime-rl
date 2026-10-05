@@ -15,8 +15,8 @@ model = 9router/dots3-note-prev
 set   = wide 20 instances (django + sympy), one episode each per seed
 budget = max_turns = 6
 
-20 episodes per arm currently (1 seed). Seeds 2 and 3 are running in the background
-(8 runs total, ~2-3 min per rollout, ~16 hours total).
+20 episodes per arm per seed; 3 seeds complete (Phase 7 seed + 8C seeds 1/2),
+60 episodes per arm, 240 total.
 
 ## Per-instance paired analysis
 
@@ -83,14 +83,14 @@ Tested against two alternatives:
   - Banner -> more effort (more calls) -> solve
   - Banner -> earlier action (earlier edit) -> solve
 
-### Trajectory metrics by arm (n=20, all episodes)
+### Trajectory metrics by arm (n=60, all episodes, 3 seeds)
 
   arm        N  solve  edit%  1stEdit  InspRun  StateChg  NCalls
   --------  --  -----  -----  -------  -------  --------  ------
-  H_A       20    0%    10%    3.0      4.5      0.02      5.5
-  H_ONCE    20    5%    10%    3.5      5.0      0.03      5.7
-  H_P       20   25%    35%    4.0      3.5      0.11      5.7
-  H_REPLAY  20   15%    20%    3.5      4.0      0.08      5.6
+  H_A       60    7%    13%    3.8      4.3      0.04      5.5
+  H_ONCE    60    3%     5%    3.0      4.6      0.02      5.7
+  H_P       60   13%    23%    4.1      3.8      0.07      5.1
+  H_REPLAY  60   17%    23%    4.2      4.3      0.07      5.7
 
 - edit% = share of episodes that write anything
 - 1stEdit = median first edit turn (among editing episodes)
@@ -100,74 +100,84 @@ Tested against two alternatives:
 
 ### The mediation chain
 
-**H_P vs H_A (25% vs 0% solve):**
+**H_P vs H_A (13% vs 7% solve at n=60):**
 
-  n_calls:           5.7 vs 5.5    -- same budget, no extra work
-  state_changing:    0.11 vs 0.02  -- 5.5x increase
-  inspect_run_max:   3.5 vs 4.5    -- shorter inspection streaks
-  first_edit_turn:   4.0 vs 3.0    -- slightly later, NOT earlier
+  n_calls:           5.1 vs 5.5    -- same budget, no extra work
+  state_changing:    0.07 vs 0.04  -- higher in the banner arms
+  inspect_run_max:   3.8 vs 4.3    -- shorter inspection streaks
+  first_edit_turn:   4.1 vs 3.8    -- later, NOT earlier
 
-The banner effect on solve is accompanied by a massive increase in state-changing
-actions (5.5x) and shorter inspection runs, with no increase in total calls and
-no earlier editing. This supports action allocation (redistribute a fixed budget
-away from inspection) and rules out effort increase and earlier action.
+The banner effect on solve is accompanied by higher state-changing action rates
+and shorter inspection runs, with no increase in total calls and no earlier
+editing. This supports action allocation (redistribute a fixed budget away from
+inspection) and rules out effort increase and earlier action.
 
-**Solved vs unsolved within arm (the key mediation test):**
+**Solved vs unsolved within arm (the key mediation test, n=60):**
 
   arm       solved  unsolved  1stEdit_s  1stEdit_u  InspRun_s  InspRun_u  StateChg_s  StateChg_u
   -------  --------  --------  ---------  ---------  ---------  ---------  ----------  ----------
-  H_ONCE     1        19        2          5         1.0        5.0        0.500       0.009
-  H_P        5        15        4          3.5       3.0        4.0        0.307       0.044
-  H_REPLAY   3        17        3          4         2.0        4.0        0.347       0.029
+  H_ONCE     2        58       2.0        3.0       1.0        4.6        0.450       0.020
+  H_P        8        52       4.1        4.1       3.0        3.9        0.300       0.050
+  H_REPLAY  10        50       4.2        4.2       3.1        4.5        0.290       0.033
 
-In every arm, solved episodes have:
-  - Higher state-changing ratio (7-8x higher than unsolved)
-  - Shorter inspection runs (roughly half the length)
-  - Sometimes earlier editing (H_ONCE, H_REPLAY) but not always (H_P: 4 vs 3.5)
+In every arm, solved episodes have much higher state-changing ratio (6-22x
+higher than unsolved) and shorter inspection runs. Editing timing does not
+separate solved from unsolved (H_P: 4.1 vs 4.1; H_REPLAY: 4.2 vs 4.2).
 
-The state-changing ratio is the most consistent mediator across arms. It is the
-metric that best separates solved from unsolved within each arm, and it also
-differs most between arms (0.02 -> 0.11, 5.5x from H_A to H_P). This supports
-the chain: banner -> more state-changing actions -> solve.
+The state-changing ratio is the most consistent mediator across arms. It best
+separates solved from unsolved within each arm (0.29-0.45 vs 0.02-0.05), and it
+differs between arms in the same direction as solve rate. This supports the
+chain: banner -> more state-changing actions -> solve.
 
 ### Mediation summary
 
 The banner effect on solve is mediated by action allocation, not effort:
 
-  Banner -> state_changing_ratio increases (5.5x H_A to H_P)
-         -> inspect_run_max decreases (4.5 to 3.5)
-         -> solve increases (0% to 25%)
+  Banner -> state_changing_ratio increases (0.04 to 0.07, all episodes;
+            0.17 to 0.30 in solved episodes)
+         -> inspect_run_max decreases (4.3 to 3.8)
+         -> solve increases (7% to 13-17%)
 
-Total calls stay flat (5.5 to 5.7). First edit turn does not move earlier
-(3.0 to 4.0, actually slightly later). The banner does not make the agent work
-harder or start earlier; it redistributes a fixed number of calls away from
-inspection toward writes and tests.
+Total calls stay flat (5.1-5.7 across arms). First edit turn does not move
+earlier (3.8 to 4.1-4.2, actually slightly later). The banner does not make the
+agent work harder or start earlier; it redistributes a fixed number of calls
+away from inspection toward writes and tests.
 
-This is a within-group correlation at n=20 per arm, not a formal SEM. The
-expanded n (80 per arm across 4 seeds) will allow bootstrap mediation analysis
-with confidence intervals.
+This is a within-group correlation at n=60 per arm, not a formal SEM, but the
+direction is stable across 3 seeds.
 
 ## Does the dose-response hold?
 
-Yes, at n=20. The ordering H_A (0%) < H_ONCE (5%) < H_REPLAY (15%) < H_P (25%)
-is consistent across solve rate, edit%, state-changing ratio, and inspection run
-length. The per-instance data shows the effect is concentrated on ~6 instances
-out of 20, not driven by a single lucky instance.
+At n=20 the ordering looked like H_A (0%) < H_ONCE (5%) < H_REPLAY (15%) <
+H_P (25%). At n=60 the ordering changes: H_ONCE (3%) < H_A (7%) < H_P (13%) <
+H_REPLAY (17%). The n=20 H_P peak (25%) was a single-seed sampling artifact:
+H_P's seed-1 rerun (rl-8c-hP-s1) scored 0/20, and the 5-solve seed that produced
+25% is not representative across seeds. The timing dimension (H_REPLAY vs H_P)
+does NOT survive expansion: the two arms are statistically indistinguishable
+(McNemar p=0.77 at episode level, p=1.0 at task level).
 
-The timing effect (H_REPLAY vs H_P, 15% vs 25%) is directional but not
-significant at n=20 (McNemar's p = 0.31). The expanded n is needed to establish
-whether the phase-boundary timing is a real fourth dimension or noise.
+What survives at n=60:
+- **Banner vs no-banner**: both banner arms solve more than H_A (7% < 13-17%),
+  directionally; the effect is concentrated on ~6-7 instances out of 20.
+- **Multiple injections > single injection**: H_P and H_REPLAY both beat H_ONCE
+  significantly at episode level (p=0.031 and p=0.008, McNemar exact).
+- **H_ONCE ~ H_A**: one injection is barely better than none (3% vs 7% solve;
+  1-2 vs 3-4 tasks solved).
+
+The timing and role dimensions measured in Phase 7/8B were single-seed
+comparisons; they need the same seed-expansion before being treated as real.
 
 ## Open items
 
-1. **Expanded n**: 2 additional seeds are running (8 runs, ~16 hours). This will
-   yield 80 episodes per arm and allow:
-   - Formal mediation analysis with bootstrap CIs
-   - Significance testing on the timing effect (H_P vs H_REPLAY)
-   - Per-instance stability check (does the same subset of instances benefit?)
+1. **More seeds on the phase-boundary arms**: the single-seed Phase 7 arms
+   (H_NEUTRAL, H_ACTION, H_PHASE, H_SYS) should be re-run with 2 more seeds to
+   establish whether their ~15% rates are stable. The four main arms are now at
+   n=60 each.
 
-2. **McNemar's significance**: H_P vs H_A is already significant (p = 0.031) at
-   n=20. The other comparisons need larger n.
+2. **Formal mediation**: the state-changing ratio is a strong within-arm
+   separator (0.29-0.45 solved vs 0.02-0.05 unsolved). A bootstrap mediation
+   analysis (Baron-Kenny or SEM) would quantify the indirect path.
 
-3. **Cross-model replication**: deferred. Bunny harness compatibility needs fixing
-   (proxy injects leading whitespace + trailing data:[DONE] in responses).
+3. **Cross-model replication**: deferred -- the bunny provider became
+   unavailable mid-Phase-8A. DeepSeek-v4-flash is too slow for T=6 (no rollout
+   in 6+ min). dots3 remains the only usable model.

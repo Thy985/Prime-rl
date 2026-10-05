@@ -206,6 +206,7 @@ def summarize(arm: str, dirs: list[str]) -> dict:
         "inj_neutral": statistics.mean(i["neutral"] for i in inj),
         "inj_action": statistics.mean(i["action"] for i in inj),
         "inj_total": statistics.mean(i["phase"] + i["neutral"] + i["action"] for i in inj),
+        "inj_raw": statistics.mean(i["raw"] for i in inj),
         "inj_system": statistics.mean(i["system"] for i in inj),
     }
     return out
@@ -222,7 +223,7 @@ def fmt(v, nd=2):
 def main() -> int:
     print("== Phase 7 banner decomposition (dots3, wide 20, T=6, edit always available) ==")
     header = (f"{'arm':<11} {'n':>3} {'solve':>6} {'edit%':>6} {'first_edit':>10} {'first_test':>10} "
-              f"{'inj/arm':>7} {'inj_kinds':>9} {'state_chg':>9} {'n_calls':>8} "
+              f"{'inj_raw':>7} {'inj_arm':>7} {'state_chg':>9} {'n_calls':>8} "
               f"{'inspect_run_max':>15} {'inspect_runs':>12} {'lag_inspect->edit':>17} {'edit_after_fail':>15}")
     print(header)
     for arm, dirs in ARMS.items():
@@ -230,17 +231,9 @@ def main() -> int:
         if not r.get("n"):
             print(f"{arm:<11} {0:>3}  (not run)")
             continue
-        kinds = []
-        if r["inj_phase"] > 0.01:
-            kinds.append(f"P{r['inj_phase']:.2f}")
-        if r["inj_neutral"] > 0.01:
-            kinds.append(f"N{r['inj_neutral']:.2f}")
-        if r["inj_action"] > 0.01:
-            kinds.append(f"A{r['inj_action']:.2f}")
-        kinds = ",".join(kinds) or "none"
         print(f"{arm:<11} {r['n']:>3} {r['solve']:>6.2f} {r['edit_eps']*100:>6.0f} "
               f"{fmt(r['first_edit_turn'], 1):>10} {fmt(r['first_test_turn'], 1):>10} "
-              f"{r['inj_total']:>7.2f} {kinds:>9} {r['state_changing_ratio']:>9.2f} {r['n_calls']:>8.1f} "
+              f"{r['inj_raw']:>7.2f} {r['inj_total']:>7.2f} {r['state_changing_ratio']:>9.2f} {r['n_calls']:>8.1f} "
               f"{fmt(r['inspect_run_max'], 1):>15} {r['inspect_runs']:>12.2f} "
               f"{fmt(r['inspect_to_edit_lag'], 1):>17} {r['edit_after_failed_test']:>15.2f}")
     return 0

@@ -23,7 +23,7 @@ stays reproducible.
 | H_A         | none (stock free-loop harness)       | 0                        |
 | H_ONCE      | full phase text (PLAN at turn 1)     | turn 1 only              |
 | H_NEUTRAL   | `Turn k of 6.`                       | every turn               |
-| H_ACTION    | `Phase: X. Goal: <action>.`          | phase boundary           |
+| H_ACTION    | `Phase: X. Goal: <action>.`          | every turn               |
 | H_P         | full phase text (PLAN / EXECUTE / FEEDBACK) | phase boundary (recorded reference) |
 | H_PHASE     | full phase text                      | every turn               |
 
@@ -35,14 +35,21 @@ in the smoke, one re-rooting artefact.
 
 ## Result
 
-| arm       | solve | edit% | no_write | inj/arm | state_chg | n_calls | inspect_run_max | inspect_runs |
-|-----------|-------|-------|----------|---------|-----------|---------|-----------------|--------------|
-| H_A       |  0%   |  10%  |  90%     |  0      |  0.02     |  5.5    |  4.5            |  1.30        |
-| H_ONCE    |  5%   |  10%  |  90%     |  1      |  0.03     |  5.7    |  5.0            |  1.30        |
-| H_NEUTRAL |  5%   |   5%  |  95%     |  4.9    |  0.01     |  5.7    |  6.0            |  1.15        |
-| H_ACTION  | 15%   |  20%  |  80%     |  3      |  0.04     |  5.8    |  5.0            |  1.15        |
-| H_P       | 25%   |  35%  |  65%     |  3      |  0.11     |  5.7    |  3.5            |  1.40        |
-| H_PHASE   | 15%   |  25%  |  75%     |  2.9    |  0.08     |  5.7    |  5.0            |  1.25        |
+| arm       | solve | edit% | no_write | cadence        | inj/ep (raw) | state_chg | n_calls | inspect_run_max | inspect_runs |
+|-----------|-------|-------|----------|----------------|--------------|-----------|---------|-----------------|--------------|
+| H_A       |  0%   |  10%  |  90%     | none           | 0             |  0.02     |  5.5    |  4.5            |  1.30        |
+| H_ONCE    |  5%   |  10%  |  90%     | turn 1 only    | 1             |  0.03     |  5.7    |  5.0            |  1.30        |
+| H_NEUTRAL |  5%   |   5%  |  95%     | every turn     | 5.9           |  0.01     |  5.7    |  6.0            |  1.15        |
+| H_ACTION  | 15%   |  20%  |  80%     | every turn     | 5.95          |  0.04     |  5.8    |  5.0            |  1.15        |
+| H_P       | 25%   |  35%  |  65%     | phase start    | 3.0           |  0.11     |  5.7    |  3.5            |  1.40        |
+| H_PHASE   | 15%   |  25%  |  75%     | every turn     | 5.7           |  0.08     |  5.7    |  5.0            |  1.25        |
+
+inj/ep (raw) is the number of banner messages the conversation actually carried,
+counted from the traces (re-rooting duplicates included -- the model reads them
+all). The "distinct texts" count differs from raw only for the every-turn arms,
+where the same phase's text repeats: H_ACTION distinct 3.0 vs raw 5.95, H_PHASE
+distinct 2.9 vs raw 5.7. The dose-response and the cadence comparison below use
+raw.
 
 edit% = share of episodes that write anything; state_chg = (write + test) calls
 over total calls; inspect_run_max = median longest streak of consecutive
@@ -66,40 +73,33 @@ is still running and is not in this table.
 effect is gone. The announcement is not a fact the model retains; it is a cue
 that decays.
 
-**A neutral turn counter is inert.** H_NEUTRAL injects more often than H_P
-(4.9 per episode vs 3) and achieves 5% solve, 5% edit, 6.0 inspect_run_max --
-the worst of every arm, an episode that inspects the entire budget. "You are on
-turn k of T" carries no control signal. The runtime announcing that it exists is
-not the mechanism.
+**A neutral turn counter is inert.** H_NEUTRAL injects every turn (5.9 per
+episode) and achieves 5% solve, 5% edit, 6.0 inspect_run_max -- the worst of
+every arm, an episode that inspects the entire budget. "You are on turn k of T"
+carries no control signal. The runtime announcing that it exists is not the
+mechanism.
 
-**Content adds something, but it is secondary.** H_ACTION, same phase-boundary
-cadence as H_P with the phase goal stripped to one line, gives 15% solve / 20%
-edit -- above the inert arms (5%) but below H_P (25%). Directional; at n=20 the
-15 vs 25 gap is 3 vs 5 solves and is not significant. The full phase
-specification is worth about half the total effect; the other half is
-irrecoverable from this arm alone.
+**Content moves the every-turn arms.** With the cadence held at every turn, the
+three arms differ only in what the banner says: neutral status 5%, one-line
+action goal 15%, full phase text 15%. Action-oriented content is worth 10
+points over neutral status; full phase specification adds nothing over the
+one-line goal at this cadence. At n=20 the neutral-vs-action gap is 1 vs 3
+solves, so the content step is directional rather than established, but the
+ordering is consistent across solve, edit% (5 -> 20 -> 25) and state_chg
+(0.01 -> 0.04 -> 0.08).
 
-**More repetition of the same text is worse, but not inert.** H_PHASE injects
-the full phase text every turn instead of at the phase boundaries -- roughly
-1.7x the cadence, identical content -- and gives 15% solve / 25% edit / 0.08
-state_chg. That is clearly below H_P (25% / 35% / 0.11) but well above the
-baseline (0% / 10% / 0.02). Repetition does not destroy the effect; it dilutes
-it. The optimum is at the phase boundaries, and every announcement beyond those
-costs about as much as it gains.
+**Cadence matters on top of content.** H_PHASE carries the same full phase text
+as H_P but injects it every turn (5.7 per episode) instead of at the phase
+starts (3.0), and drops from 25% to 15% solve, 35% to 25% edit, 0.11 to 0.08
+state_chg. The phase-boundary spacing is worth the difference. Directional at
+this n (5 vs 3 solves), but it is the only comparison in the run that holds
+content exactly constant while varying only when the text arrives.
 
-The two 15% arms are the cleanest separation in the run. H_ACTION and H_PHASE
-inject at the same rate -- 3.0 and 2.9 distinct texts per episode -- and both
-score 15%. What differs is which of the two levers each one spends: H_ACTION
-buys the right cadence and throws away the content; H_PHASE buys the right
-content and throws away the cadence. They cancel exactly. H_P is the only arm
-that holds both, and it is the only one at 25%. Content and cadence are each
-worth roughly half the effect, and they do not substitute for each other.
-
-The full dose-response, ordered by injection frequency: 0 -> 0%, 1 -> 5%,
-3 phase-boundary full-text -> 25%, 2.9 every-turn full-text -> 15%, 3
-phase-boundary one-line -> 15%, 4.9 every-turn neutral -> 5%. Monotone in the
-content at a fixed cadence, and peaked at the phase boundaries for a fixed
-content. Neither lever alone reaches H_P.
+So the dose-response over injection frequency at full phase content is 1 -> 5%,
+3 (phase starts) -> 25%, 5.7 (every turn) -> 15%. Non-monotone, with the peak
+at the phase boundaries. Repetition is necessary (1 vs 3), and repetition at
+the wrong spacing is worse than not repeating at all beyond the boundary
+(5.7 < 3).
 
 ## What the trajectory actually says
 
@@ -128,16 +128,16 @@ state_chg and solve all move together in the same order.
 Two numbers separate the arms. inspect_run_max 3.5 is H_P alone; every other
 arm is 4.5-6.0. And where the edit lands: among H_P's seven editing episodes
 first_edit_turn is [2,3,3,4,4,6,6] -- five of seven inside the PLAN+EXECUTE
-window (turns 2-4), right after the announcement that covers them. H_ACTION's
-editing episodes land later and more spread out, [3,4,5,6]. The announcement
-does not change when the agent edits; it is what makes the agent get to editing
-at all, and the phase-boundary cadence is what keeps the edit inside the window
-the phase is supposed to be spent in.
+window (turns 2-4), right after the announcement that covers them. H_PHASE's
+editing episodes land at [2,2,3,4,6]. The announcement does not change when the
+agent edits; it is what makes the agent get to editing at all, and the
+phase-boundary cadence is what keeps the edit inside the window the phase is
+supposed to be spent in.
 
-edit% is not monotone in frequency either: H_NEUTRAL injects most often (4.9)
-and edits least (5%). H_PHASE injects at 1.7x H_P's rate and edits at 25 vs
-35. Frequency without content buys nothing; frequency on top of content costs a
-little.
+edit% is not monotone in frequency either: H_NEUTRAL injects most often (5.9)
+and edits least (5%). The every-turn full-text arm (H_PHASE, 5.7) edits at 25
+vs H_P's 35 at the phase starts (3.0). Frequency without content buys nothing;
+frequency on top of content costs a little.
 
 ## Mechanism statement
 
@@ -176,15 +176,16 @@ delivered every turn, and the effect is diluted by half without vanishing.
 Neither endpoint is inert, so the announcement is not a binary switch; it is a
 resource with a cost, and the phase boundaries are where it is cheapest.
 
-The control-plane reading follows from the two 15% arms. If the mechanism were
-"the model needs the phase text nearby", H_PHASE and H_ACTION would both match
-H_P -- they both put phase text at the decision point. They do not, because
-H_ACTION's phase text is one line, and H_PHASE's phase text arrives every turn
-instead of at the boundary. What H_P does differently is *both*: it spends
-enough words on the phase to specify it, and it spends them at the boundary
-where the agent is choosing what the phase is for. A control plane that announces
-correctly and at the right moment beats one that announces correctly all the
-time or briefly once at the right moment.
+The control-plane reading follows from the cadence comparison. If the mechanism
+were "the model needs the phase text nearby at decision time", H_PHASE would
+match or beat H_P -- it puts the full phase text at every decision point, not
+just the phase starts. It does not: 15% vs 25%. The spacing of the announcement
+is part of the signal. The boundary version leaves ~3 turns of uninterrupted
+action flow between cues and the effect is maximal; the every-turn version
+re-anchors a decision that has already been anchored and the marginal
+announcement does not add -- it may even pull the agent back to re-reading the
+phase instead of acting in it. What H_P does is announce the phase at the moment
+the agent is choosing what the phase is for, and then leave it alone.
 
 What remains open is whether the message role is load-bearing at all. H_SYS
 injects the identical H_P text at the identical phase-boundary cadence as a
@@ -200,13 +201,15 @@ re-measure the same null.
 
 Two items remain open.
 
-The content and cadence split is not statistically established. H_P 25% vs
-H_ACTION 15% vs H_PHASE 15% are 5, 3 and 3 solves at n=20; the half-effect
-attribution of content and cadence is directional, not a confidence interval.
-Closing it needs a larger n on H_ACTION, H_P and H_PHASE -- not a new arm.
+Both levers are real but neither step is statistically established at n=20. The
+content step (neutral 5% -> action/full 15%, every-turn) is 1 vs 3 solves; the
+cadence step (every-turn full 15% -> phase-start full 25%) is 3 vs 5 solves. The
+ordering is consistent across solve, edit%, state_chg and inspect_run_max in
+both cases, so the directions hold, but a larger n on H_NEUTRAL / H_ACTION /
+H_PHASE / H_P would tighten the gaps -- no new arm is needed.
 
 The message role. H_SYS injects the identical H_P text at the identical
-phase-boundary cadence as a system message rather than a user message. If H_SYS
+phase-start cadence as a system message rather than a user message. If H_SYS
 matches H_P, the role is irrelevant and the mechanism is content-and-cadence
 full stop. If it drops, the user-role interruption that lands at the decision
 point is part of what does the work -- which would be a stronger result than

@@ -52,7 +52,9 @@ from swe_lab.taskset import SweLabConfig, SweLabTaskset, parse_proposals
 INVALID_STOPS = ("error",)
 
 TEST_RE = re.compile(r"\bpytest\b|\bunittest\b")
-WRITE_RE = re.compile(r">\s*\S|\bsed -i\b|\btee\b|<<\s*['\"]?EOF|\bpatch\b|\bapply_patch\b")
+# A `>` counts as a tree write only when it redirects to a real path: `2>&1`
+# and `>/dev/null` suppress or discard output, they do not mutate the tree.
+WRITE_RE = re.compile(r">(?!&)\s*(?!/dev/null\b)\S|\bsed -i\b|\btee\b|<<\s*['\"]?EOF|\bpatch\b|\bapply_patch\b")
 INSPECT_RE = re.compile(r"^\s*(cat|ls|head|tail|grep|find|sed|wc|file|awk|less|diff)\b")
 WRITE_TOOLS = ("edit", "write", "apply_patch", "str_replace", "create")
 

@@ -46,10 +46,14 @@ in the smoke, one re-rooting artefact.
 
 edit% = share of episodes that write anything; state_chg = (write + test) calls
 over total calls; inspect_run_max = median longest streak of consecutive
-inspection calls. 18 of H_PHASE's 20 rollouts ended at max_turns, 2 hit
-HarnessError; all other arms are 20 clean rollouts. `edit_after_failed_test` is
-0.00 in every arm, so no arm here does test-driven repair -- the Phase 5/6
-finding holds.
+inspection calls. All six arms are 20 rollouts. H_PHASE is the only arm with
+failures: 18 ended at max_turns and 2 hit a 600s rollout timeout
+(`HarnessError: agent timeout`) -- the every-turn full text makes those
+episodes slower, not the banner mechanism itself. Both timed-out rollouts count
+as unsolved, so H_PHASE's 15% is a floor; if either had solved the
+"more repetition dilutes" finding is weaker, never stronger. All other arms are
+20 clean rollouts. `edit_after_failed_test` is 0.00 in every arm, so no arm
+here does test-driven repair -- the Phase 5/6 finding holds.
 
 H_SYS (identical text and cadence as H_P, banner injected as a system message)
 is still running and is not in this table.

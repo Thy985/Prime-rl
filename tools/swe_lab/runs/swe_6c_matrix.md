@@ -40,13 +40,20 @@ H_ADAPT's: T=4-6 0-5%, T=8 15%. T=2 is a clean 0% for all three.
 The extension arms isolate the two signals where the effect lives (T=6, the
 budget at which H_D peaks):
 
-| arm    | solve | edits | tests | mechanism present          |
-|--------|-------|-------|-------|---------------------------|
-| H_A    | 0/20  | 2/20  | 0/20  | none                      |
-| H_P    | 5/20  | 7/20  | 1/20  | per-turn banner only      |
-| H_D    | 5/20  | 6/20  | 4/20  | banner + silent gate      |
-| H_G    | 1/20  | 3/20  | 0/20  | silent gate only          |
-| H_ADAPT| 1/20  | 2/20  | 0/20  | adaptive scheduler only   |
+| arm    | solve | edits | tests | first_edit_turn (med, edit-eps) | mechanism present          |
+|--------|-------|-------|-------|----------------------------------|---------------------------|
+| H_A    | 0/20  | 2/20  | 0/20  | 3.0 (2 eps)                      | none                      |
+| H_P    | 5/20  | 7/20  | 1/20  | 4.0 (7 eps)                      | per-turn banner only      |
+| H_D    | 5/20  | 6/20  | 4/20  | 3.5 (6 eps)                      | banner + silent gate      |
+| H_G    | 1/20  | 3/20  | 0/20  | 5.0 (3 eps)                      | silent gate only          |
+| H_ADAPT| 1/20  | 2/20  | 0/20  | 5.5 (2 eps)                      | adaptive scheduler only   |
+
+first_edit_turn is the 1-based turn of the first edit, median over episodes that
+edited. It answers the Phase-6A question on its own metric: H_G does *not* push
+the first edit earlier -- the silent gate lands at the free-agent edit rate and
+later timing (5 vs H_A's 3) -- while H_P (banner alone) produces 3.5x the edit
+episodes and the earliest possible first edit (min 2, in the first execute turn).
+Affordance scheduling (H_G) is falsified; the announcement (H_P) is the mechanism.
 
 H_P -- the phase banner with the edit tool present every turn, no gating --
 reproduces H_D's solve rate exactly (5/20 = 25%) and beats H_D on edits
@@ -73,6 +80,26 @@ The H_ADAPT comparison is then mostly the same negative: an adaptive scheduler
 with no banner is a silent gate with worse timing (recon-2 tax), so it sits at
 the H_G/H_A floor until T=8, where the free budget carries it to 15% alongside
 H_A.
+
+Pilot confirmation (the other operating point): H_P run on the pilot grid
+(5 instances x2 + topup, 16 eps, T=4) scores 7/16 = 44%, exactly H_D's pilot
+44%, solving the same two instances (11066, 11206), with the edit tool verified
+present in every request node. The banner reproduces the gated harness
+instance-for-instance at both budgets; the enforcement contributes nothing
+measurable (swe_harness_triangle.md now carries H_P in the table).
+
+The space-bunny leg of this matrix is BLOCKED by the provider, not by the
+harness: on 09:07 UTC the openrouter stealth route began returning
+`openai.APIError: Provider returned an empty response` on *every* streaming
+completion (hD-T6 20/20, hAdapt-T6 11/11, second half of hA-T6), the same
+free-tier instability recorded in the second-model doc (429 daily-cap, 404
+unavailable-for-free). The hA-T6 partial run (1/20 solved, 10/20
+HarnessError-of-which-half-timeout) is unusable. The dots3 endpoint was probed
+healthy at the same time. Rerun the bunny legs when the stealth route recovers;
+the four arm configs are staged (eval_real_6c_bunny_hX_T6.toml). One config
+fix is needed regardless: bunny's T=6 episodes exceed the 600s rollout budget
+when the provider is slow, so the bunny configs should set
+timeout.rollout ~= 1200.
 
 ## Three findings
 

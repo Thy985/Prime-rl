@@ -27,4 +27,4 @@ env.agent.harness.id = "swe-lab-adaptive-executor"
 env.agent.harness.env = { SWE_LAB_BUDGET = "8" }
 env.agent.runtime.type = "subprocess"
 env.agent.max_turns = 8
-env.agent.timeout.rollout = 600
+env.agent.timeout.rollout = 1200

@@ -18,4 +18,4 @@ env.taskset.id = "swe_bench"
 env.agent.harness.id = "bash"
 env.agent.runtime.type = "subprocess"
 env.agent.max_turns = 2
-env.agent.timeout.rollout = 600
+env.agent.timeout.rollout = 1200

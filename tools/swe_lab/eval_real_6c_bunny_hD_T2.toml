@@ -19,4 +19,4 @@ env.agent.harness.id = "swe-lab-planner-executor"
 env.agent.harness.env = { SWE_LAB_PHASES = "1,2," }
 env.agent.runtime.type = "subprocess"
 env.agent.max_turns = 2
-env.agent.timeout.rollout = 600
+env.agent.timeout.rollout = 1200

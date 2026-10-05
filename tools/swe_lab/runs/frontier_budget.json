@@ -1,0 +1,105 @@
+{
+ "run": "swe-lab-budget-hA",
+ "tiers": {
+  "tier1-single-file": {
+   "n": 8,
+   "n_valid": 8,
+   "n_invalid": 0,
+   "solved": 8,
+   "mode": "patch",
+   "mean_tool_calls": 4.625,
+   "no_write": 0,
+   "mean_writes": 2.0,
+   "tool_mix": {
+    "bash": 21,
+    "edit": 16
+   },
+   "solve_rate": 1.0,
+   "mean_rescored": 1.0,
+   "mean_recorded": 1.0,
+   "failures": {}
+  },
+  "tier2-multifile": {
+   "n": 8,
+   "n_valid": 8,
+   "n_invalid": 0,
+   "solved": 8,
+   "mode": "patch",
+   "mean_tool_calls": 4.375,
+   "no_write": 0,
+   "mean_writes": 2.0,
+   "tool_mix": {
+    "bash": 19,
+    "edit": 16
+   },
+   "solve_rate": 1.0,
+   "mean_rescored": 1.0,
+   "mean_recorded": 1.0,
+   "failures": {}
+  },
+  "tier3-regression-trap": {
+   "n": 8,
+   "n_valid": 8,
+   "n_invalid": 0,
+   "solved": 1,
+   "mode": "patch",
+   "mean_tool_calls": 4.75,
+   "no_write": 0,
+   "mean_writes": 2.125,
+   "tool_mix": {
+    "bash": 21,
+    "edit": 17
+   },
+   "solve_rate": 0.125,
+   "mean_rescored": 0.125,
+   "mean_recorded": 0.125,
+   "failures": {
+    "unsolved": 7
+   }
+  },
+  "tier4-hidden-config-layer": {
+   "n": 8,
+   "n_valid": 8,
+   "n_invalid": 0,
+   "solved": 6,
+   "mode": "patch",
+   "mean_tool_calls": 4.0,
+   "no_write": 0,
+   "mean_writes": 1.75,
+   "tool_mix": {
+    "bash": 18,
+    "edit": 14
+   },
+   "solve_rate": 0.75,
+   "mean_rescored": 0.75,
+   "mean_recorded": 0.75,
+   "failures": {
+    "unsolved": 2
+   }
+  },
+  "tier5-multi-constraint": {
+   "n": 8,
+   "n_valid": 8,
+   "n_invalid": 0,
+   "solved": 1,
+   "mode": "patch",
+   "mean_tool_calls": 4.5,
+   "no_write": 3,
+   "mean_writes": 1.25,
+   "tool_mix": {
+    "bash": 26,
+    "edit": 10
+   },
+   "solve_rate": 0.125,
+   "mean_rescored": 0.16666666666666666,
+   "mean_recorded": 0.16666666666666666,
+   "failures": {
+    "unsolved": 4,
+    "no_write": 3
+   }
+  }
+ },
+ "frontier": [
+  "tier3-regression-trap"
+ ]
+}

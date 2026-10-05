@@ -1,0 +1,61 @@
+# Cross-model replication: H_A (bash + edit) on a SECOND model.
+#
+# The question this answers: is the H_D > H_A harness effect a property of the harness,
+# or an interaction with the one model it was found on (9router/dots3-note-prev)?
+#
+# Everything except the model is held at the recorded H_A condition: same taskset, same
+# patch mode, same subprocess runtime, same max_turns = 4, same temperature 0.0.
+# Only the model id changes, to openrouter/stealth/space-bunny-alpha -- a stealth/alpha-lab model, a different
+# family and training lineage from the dots3-note-preview the effect was found on.
+#
+# It is the right regime for the replication: tier3 H_A measures 1/8 = 12.5% against
+# dots3's 21%, so there is headroom for H_D to move, unlike glm-5.2 (79%) which
+# saturated the tier. It holds 8/8 valid episodes at -c 1 with ~28 calls/min
+# sustained, so quota is not the binding constraint for this run.
+#
+# Restricted to tier3 and tier5: tier3 is where H_D's effect was largest (21% -> 58%),
+# tier5 is where it was smallest (4% -> 17%). The two ends of the effect size are what
+# a replication has to reproduce for the direction to mean anything.
+#
+# group_size = 24 gives 24 episodes per tier per run, matching the 24 pooled episodes
+# per tier already recorded for dots3 (3 runs of 8). One tier here is ONE task, so these
+# are 24 samples of the same task, not 24 tasks -- a within-task spread, which is the
+# same instrument the dots3 runs used.
+#
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_patch_m2_budget.toml --run.name m2-hA1
+
+model = "openrouter/stealth/space-bunny-alpha"
+num_examples = 2
+group_size = 24
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.taskset.tiers = ["tier3-regression-trap", "tier5-multi-constraint"]
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.timeout.rollout = 600
+# Run this config at -c 1. The endpoint's secondary providers are rate-limited per
+# provider, and the eval's default -c 4 fires enough simultaneous calls to trip
+# `inference exceeds tpm/rpm limit`, which ends episodes at stop=ProviderError
+# rather than measuring the harness. Measured sustainable throughput on this
+# endpoint is ~32-43 calls/min sequential; a 48-episode run needs ~192 calls, so
+# -c 1 is what fits inside the quota. Two providers were rejected this way:
+# sensenova/glm-5.2 (rpm exhausted, 0/6 on retry) and
+# sensenova/deepseek-v4-flash (tpm/rpm limit, 144 provider errors per run).
+
+# env.agent.timeout.rollout bounds a hung model call. verifiers' client has NO
+# read timeout (agentic completions are slow; the rollout timeout is the real
+# bound) and the default is 4 hours -- one hung episode on space-bunny-alpha
+# stalled a whole -c 1 run for 25+ min at 40/48. 600s is ~15x a normal
+# episode (~40s), so it fails the hung episode instead of blocking the run.

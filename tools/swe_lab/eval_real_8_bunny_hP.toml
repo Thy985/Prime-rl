@@ -1,0 +1,29 @@
+# Phase 8A cross-model replication on openrouter/stealth/space-bunny-alpha.
+# Same harness, allocation ("1,2,"), 20-instance wide set, T=6, and the same
+# banner semantics as the dots3 Phase 7 runs. Only the model changes.
+# timeout.rollout=1200 because bunny is ~51s/rollout vs dots3 ~6s.#
+# H_P: full phase text at each phase start (the default "full" mode), user role.
+# Matches dots3 rl-6c-hP-T6, the 25% best arm.
+#
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_8_bunny_hP.toml --run.name rl-8a-bunny-hP -c 1 --clean -n 20 -r 1
+
+model = "openrouter/stealth/space-bunny-alpha"
+num_examples = 20
+group_size = 1
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.harness.env = { SWE_LAB_PHASES = "1,2,", SWE_LAB_GATE = "0" }
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 6
+env.agent.timeout.rollout = 1200

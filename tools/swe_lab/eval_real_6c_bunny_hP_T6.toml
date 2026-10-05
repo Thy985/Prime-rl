@@ -1,0 +1,34 @@
+# 2x2 factor cell H_P: phase prompts ON, edit gating OFF.
+#
+# Same planner program and same allocation ("1,2,") and the same verbatim phase
+# prompts as H_D, but SWE_LAB_GATE=0 keeps the edit tool in the tool list during
+# the recon turn and never refuses bash writes. The recon prompt still *claims*
+# the edit tool is not available; this arm isolates the prompt-text effect:
+# if the model delays editing because the prompt says it cannot, H_P shows a
+# prompt effect; if it edits anyway, affordance availability dominates.
+#
+# Same 20-instance wide set as eval_real_wide_hD.toml, T=4, one episode per
+# instance (run with -n 20 -r 1).
+#
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_hP.toml --run.name rl-2x2-hP -c 1 --clean -n 20 -r 1
+
+model = "openrouter/stealth/space-bunny-alpha"
+num_examples = 20
+group_size = 1
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.harness.env = { SWE_LAB_PHASES = "1,2,", SWE_LAB_GATE = "0" }
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 6
+env.agent.timeout.rollout = 1200

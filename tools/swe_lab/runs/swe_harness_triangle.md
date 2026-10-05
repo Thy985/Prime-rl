@@ -1,0 +1,150 @@
+# H_A' : how much of the harness effect is the instruction text?
+
+The real-SWE pilot measured a 32-point gap (H_A 2/16 = 12%, H_D 7/16 = 44%) but
+H_D differs from H_A in two entangled ways at once: (i) it injects per-phase
+instructions and (ii) it enforces them at runtime -- the edit tool is absent in
+recon, commands that change the tree are refused there, and each early phase is
+capped. H_A' separates the two: the same free bash+edit loop, the same 4-turn
+budget, the same system prompt as H_A, plus ONE static paragraph carrying the
+behavioural content of the three phase prompts (inspect -> edit early -> verify).
+No phase numbering, no gating, no tool removal. The config is byte-identical to
+eval_real_hA.toml apart from comments; the taskset appends the paragraph when
+SWE_REAL_H_A_PRIME=1 (tools/swe_lab_env/swe_bench/taskset.py).
+
+Same 5 gated django instances and the same episode grid as the pilot (5x2 plus a
+2-task x3 topup = 16 episodes per arm), same model (dots3-note-prev), -c 1.
+Injection verified in the recorded traces: system_prompt length 724 with the
+paragraph present, 428 without.
+
+## The triangle
+
+| harness   | free loop | behaviour text         | runtime gating | resolve |
+|-----------|-----------|------------------------|----------------|---------|
+| H_A       | yes       | no                     | no             | 2/16 = 12% |
+| H_A'      | yes       | yes (static paragraph) | no             | 1/16 = 6%  |
+| H_P       | yes       | yes (per-turn banner)  | no             | 7/16 = 44% |
+| H_D       | no        | yes (per-turn banner)  | yes            | 7/16 = 44% |
+
+H_P is the Phase-6A cell: the same per-turn phase banner as H_D with the edit
+tool present every turn and no gating (SWE_LAB_GATE=0; verified in the traces --
+all 10 request nodes carry edit). It was run on the same pilot grid (5 x2 + 2-task
+x3 topup = 16 eps, dots3, T=4). H_P *exactly* reproduces H_D's 44% and solves the
+same two instances (11066 5/5-style, 11206).
+
+## What the behaviour profile says
+
+| harness | no_write | calls (unsolved / solved) | top unsolved sequence |
+|---------|----------|---------------------------|----------------------|
+| H_A     | 88%      | 3 / 4                    | `inspect inspect inspect inspect` x8 |
+| H_A'    | 88%      | 4 / 4                    | `inspect inspect inspect inspect` x6 |
+| H_D     | 56%      | 3 / 3                    | `inspect inspect inspect inspect` x2 |
+
+The `no_write` figures were recomputed with the corrected `kind_of`
+(`>(?!&)\s*(?!/dev/null)\S`); the earlier version counted `find ... 2>/dev/null`
+and `grep ... 2>&1` as tree writes, so unsolved all-inspect episodes were
+mislabelled as having written. Corrected: every unsolved episode in H_A and H_D
+wrote nothing at all; one H_A' unsolved episode wrote and failed.
+
+Conditional on the episode writing anything at all, resolve is H_A 2/2 = 100%,
+H_A' 1/2 = 50%, H_D 7/7 = 100% (corrected -- the old 25% / 11% / 54% was the
+same /dev/null artefact). So H_D helps once, not twice: more episodes reach a
+write at all (7 of 16 vs 2), and a write that does happen lands in every arm at
+this n. The harness effect is the write rate, not write quality.
+
+## Two findings worth keeping
+
+**Static instruction text is not the mechanism; the per-turn banner is.** H_A'
+does not recover any of the gap (1/16 vs 2/16 is noise at this n). But H_P --
+the same behavioural content delivered as a per-turn, turn-numbered phase banner
+("PHASE 2 of 3 -- EXECUTE ... apply the repair now") with no enforcement --
+recovers the *entire* H_D gap (7/16 = 44% in both). The distinction the first
+triangle missed: the phase text works because it fires every turn at the point of
+decision, not because it is static advice the model must remember. The paragraph's
+wording ("first spend a turn or two locating the code that matters") also
+reinforces inspection, which a model already prone to inspecting needs least.
+
+**The real-SWE gain is not test-driven either.** test_after_edit is 0% in all
+three arms: no episode in any arm -- including H_D, whose phase 3 says "re-run the
+failing tests" -- ever invokes `tests/runtests.py`. This confirms the pilot's
+"0 test-suite runs in all 32 episodes" across a third arm and pins the mechanism
+more tightly than the toy-terrain profile did. On the tiers, H_D's gain was
+attributed to the verify turn; on real SWE that turn never fires, so what remains
+is the write discipline: a bounded recon turn followed by turns that can and must
+edit. The gating does not merely suggest editing, it removes the option of not
+editing (the edit tool is simply not there in recon), and a model that never
+writes cannot pass.
+
+## Consequence for the program
+
+The causal story is now: **per-turn announcement > enforcement = static prose**.
+The pilot's +32 points are attributable to the per-turn banner, and the runtime
+enforcement -- removing the edit tool during recon -- adds nothing measurable on
+top of it (H_D 44% = H_P 44% at the pilot; H_D 25% = H_P 25% at wide T=6; the
+silent gate alone, H_G, sits at the free-agent floor). The wide-set 2x2 and the
+T=6 decomposition confirm the same ordering at a second operating point
+(tools/swe_lab/runs/swe_2x2.md, swe_6c_matrix.md). What the runtime is doing to
+the agent is not restricting which tools exist; it is telling the agent, every
+turn, what its current job and remaining budget are, at the moment the agent
+chooses its next action. This is why the Phase 4 route failed for an additional
+reason worth
+recording: SFT on the teacher's conversation can at best teach prose that mimics
+the guidance. The part that produced the effect -- being unable to spend a turn
+without editing -- is a property of the harness, and a 0.6B student that emits no
+tool call at all never experiences it.
+
+Follow-ups in priority order: the budget sweep (does the gap live only at low
+budget?), more real-SWE tasks, and a second model on real SWE.
+
+## Reproduce
+
+    SWE_REAL_PY=/tmp/swe_deps/django_env/bin/python SWE_REAL_H_A_PRIME=1 \
+    bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_hA_prime.toml \
+      --run.name rl-hAp -c 1 --clean
+    # same, plus: --run.name rl-hAp-topup -c 1 --clean -n 2 -r 3
+
+    uv run python tools/swe_lab/behavior_real.py \
+      --pattern "H_A=outputs/rl-hA" "H_A=outputs/rl-hA-topup" \
+               "H_A'=outputs/rl-hAp*" \
+               "H_D=outputs/rl-hD" "H_D=outputs/rl-hD-topup"
+## Mechanism, turn by turn
+
+`tools/swe_lab/gating.py` reads the recorded traces and asks what the runtime
+actually did, rather than what the prompts said. Two things fall out, and one of
+them corrects the pilot's earlier reading of the mechanism.
+
+**Which tools were on the table.** In the recon request the tool list carried by
+the API call is `[bash]`; the edit tool is not merely discouraged, it is absent.
+From the execute phase on the list is `[bash, edit]`. So H_D is not a prompt that
+asks for edits -- it is a turn whose affordances contain no way to edit, followed
+by turns whose affordances do. Across the 16 pilot episodes: 32 recon turns all
+bash-only, then 16 execute and 16 feedback turns all with edit available.
+
+**The bash write refusal never fired.** The planner refuses tree-changing bash in
+the recon phase, but the recorded refusal string (`writes are not allowed in this
+turn`) appears **0 times** in 48 episodes. On real SWE the model does not try to
+patch the file with `sed`/`patch`/`>` during recon; it runs `find .` (24x) and
+`git log` (4x). So the load-bearing part of the enforcement is the tool
+availability, not the command filter. (An earlier pass of this probe "found" 5
+refusals; those were false positives from loose keyword matching against file
+contents the agent had catted back. The matcher is now the exact refusal string.)
+
+**At the 4-turn budget, instructions to verify are not obeyed.** The feedback
+phase says "Re-run the failing tests and read the output. Repair what is still
+failing." In 16/16 feedback turns the model ran **no test at all**: 7x `cat -n`,
+4x `grep -rn`, 1x `sed -n`, 1x `cat`. Zero `runtests.py`, zero `pytest`, in any
+arm at T=4. The same agent that never verifies when told to verify is the one for
+whom a static paragraph about verifying (H_A') does nothing. Instruction-level
+control of this agent is inert at low budget; affordance-level control is not.
+(The budget sweep shows this changes: at T>=6 H_D runs tests in feedback, at T=8
+both arms verify -- see swe_budget_sweep.md.)
+
+**Edits per episode, by harness:**
+
+| harness | acts | edit calls | edits per episode |
+|---------|------|-----------|-------------------|
+| H_A + H_A' | 127 | 4 | 0.13 |
+| H_D | 41 | 7 | 0.44 |
+
+H_D produces ~3.5x more edits per episode from the same model and the same tasks.
+That, rather than any difference in what the model was told, is the mechanism the
++32 points rides on.

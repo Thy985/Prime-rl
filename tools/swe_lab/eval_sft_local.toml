@@ -1,0 +1,38 @@
+# Real-SWE eval of a locally-served checkpoint under the bare H_A harness.
+#
+# Protocol-invariant by construction: no phase protocol anywhere, bash + edit,
+# max_turns=4, the same swe_bench taskset the dots3 H_A/H_D pilots used, so the
+# student's numbers sit on the same grid as the teacher pilot (H_A 2/16 = 12%,
+# H_D 7/16 = 44%).
+#
+# The model field below is the served-model name of the vLLM server started
+# with tools/swe_lab/inference_qwen3_06b.toml (baseline) or the SFT checkpoint
+# directory (pi-real-D). Override with --model and --client.base_url if the
+# server differs:
+#
+#   DUMMY_API_KEY=x uv run eval @ tools/swe_lab/eval_sft_local.toml \
+#     --model "$SERVED_NAME" --run.name <tag> -c 1 --clean
+#
+# Untrained baseline  : uv run inference @ tools/swe_lab/inference_qwen3_06b.toml
+# pi-real-D checkpoint: uv run inference @ <cfg> --vllm.model <ckpt_dir>
+# Then the eval above against http://127.0.0.1:8000/v1.
+
+model = "PrimeIntellect/Qwen3-0.6B"
+num_examples = 5
+group_size = 2
+
+[client]
+base_url = "http://127.0.0.1:8000/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.timeout.rollout = 600

@@ -1,0 +1,29 @@
+# Harness C: identical to eval_patch_noedit.toml (bash, edit disabled, same model,
+# taskset and budgets) except the harness -- `swe_lab_patch_first` -- states the
+# completion requirement in the system prompt. It is a prompt-only intervention:
+# nothing here plans, executes or verifies in phases.
+#
+# Result at 3 runs x 8 attempts per tier: H_C does not beat H_B on either solve or
+# no-write. The bash-only conditions pool between 33% and 92% across tiers, H_C is
+# the noisier of the two (tier1 spans 25-75%), and tier2/tier3 contradict each other
+# across sample sizes. Read this config only through repeats.py, never from one run.
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 8
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "swe-lab-patch-first"
+env.agent.harness.edit = false
+env.agent.runtime.type = "subprocess"

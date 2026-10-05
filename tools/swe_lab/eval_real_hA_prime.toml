@@ -1,0 +1,40 @@
+# Real SWE-bench Verified: H_A' -- the static-instruction control for the H_D result.
+#
+# H_A vs H_D differs in two ways at once: H_D (i) replaces the free loop with a
+# staged recon/execute/verify program and (ii) injects a per-phase instruction
+# ("inspect this turn", "apply the change now, do not restate it", "re-run the
+# tests and repair"). H_A' keeps the free bash+edit loop, the same 4-turn budget and
+# the same system prompt as H_A, and adds ONLY the behavioural content of those
+# three instructions as one static paragraph: inspect, then edit early, then verify.
+#
+# Read the triangle:
+#   H_A  12%   free loop, no behavioural guidance
+#   H_A' ?     free loop + static behavioural guidance
+#   H_D  44%   staged loop + per-phase guidance + runtime gating
+#
+# The taskset reads SWE_REAL_H_A_PRIME=1 from the environment (see swe_bench.taskset);
+# nothing else differs from eval_real_hA.toml, which keeps this comparison exact.
+#
+#   SWE_REAL_PY=/tmp/swe_deps/django_env/bin/python SWE_REAL_H_A_PRIME=1 \
+#   bash /tmp/run_swe_eval.sh tools/swe_lab/eval_real_hA_prime.toml \
+#     --run.name rl-hAp -c 1 --clean
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 2
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-bench"
+env.taskset.id = "swe_bench"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.timeout.rollout = 600

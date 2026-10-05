@@ -1,0 +1,36 @@
+# Harness F: the attribution control for Harness D. Same model, taskset, tools, runtime
+# and max_turns = 4, and the SAME allocation as H_D (recon 1 + execute 2 + verify 1), but
+# with the structured phase prompts removed -- no PHASE_PROTOCOL in the system prompt, no
+# PLAN/EXECUTE/FEEDBACK instruction messages, no plan block. What remains is pure action
+# gating: turn 1 is read-only (the edit tool is withheld and bash write commands are
+# refused, with a neutral refusal message), turns 2-4 are free.
+#
+#   H_A   free 4 turns
+#   H_F   turn 1 read-only, turns 2-4 free   <- this config (phase gating, no prompts)
+#   H_D   staged recon + execute + verify   (phase gating + structured prompts)
+#
+# H_A -> H_F isolates the value of turn-1 read-only action gating; H_F -> H_D isolates
+# the value of the structured phase prompts on top of the same gating. SWE_LAB_QUIET
+# suppresses the prompts; SWE_LAB_PHASES = "1,2," keeps the H_D allocation so turn 1 is
+# the read-only phase.
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 8
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "swe-lab-planner-executor"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4
+env.agent.harness.env = { SWE_LAB_PHASES = "1,2,", SWE_LAB_QUIET = "1" }

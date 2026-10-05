@@ -1,0 +1,42 @@
+# Swe-lab protocol-invariant SFT eval.
+#
+# The SFT target is the tool-usage pattern the harness shapes, not the harness
+# protocol itself. The model is trained on the canonical branch of H_D/H_E/H_F
+# successful episodes, where the assistant turns carry no phase markers (H_F) or
+# only role instructions (H_D/H_E). The eval therefore strips every phase
+# protocol prompt and runs with the bare H_A harness (bash + edit, max_turns=4),
+# matching the shape the model will actually face in deployment.
+#
+# The model under test is the SFT'd version of 9router/dots3-note-prev. Replace
+# the model / base_url / api_key fields below with the checkpoint you want to
+# score. The comparison is: same taskset, same harness, same budget, model only.
+#
+#   set -a; . ./.env; set +a
+#   DUMMY_API_KEY="$SFT_API_KEY" uv run eval @ tools/swe_lab/eval_patch_sft.toml
+#     --model "$SFT_MODEL" --client.base_url "$SFT_BASE_URL" -c 4
+#
+# For the baseline read H_A (stock bash + edit, max_turns=4):
+#   python tools/swe_lab/repeats.py --pattern 'outputs/swe-lab-budget-hA*'
+#
+# For the SFT'd model:
+#   python tools/swe_lab/repeats.py --pattern 'outputs/swe-lab-sft-*'
+
+model = "9router/dots3-note-prev"
+num_examples = 5
+group_size = 8
+
+[client]
+base_url = "http://172.20.208.1:20128/v1"
+api_key_var = "DUMMY_API_KEY"
+
+[sampling]
+max_completion_tokens = 8192
+temperature = 0.0
+
+[[source]]
+name = "swe-lab"
+env.taskset.id = "swe-lab"
+env.taskset.mode = "patch"
+env.agent.harness.id = "bash"
+env.agent.runtime.type = "subprocess"
+env.agent.max_turns = 4

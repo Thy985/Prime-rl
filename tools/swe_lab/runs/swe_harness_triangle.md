@@ -18,11 +18,18 @@ paragraph present, 428 without.
 
 ## The triangle
 
-| harness   | free loop | static behaviour text | runtime gating | resolve |
-|-----------|-----------|-----------------------|----------------|---------|
-| H_A       | yes       | no                    | no             | 2/16 = 12% |
-| H_A'      | yes       | yes                   | no             | 1/16 = 6%  |
-| H_D       | no        | yes (per phase)       | yes            | 7/16 = 44% |
+| harness   | free loop | behaviour text         | runtime gating | resolve |
+|-----------|-----------|------------------------|----------------|---------|
+| H_A       | yes       | no                     | no             | 2/16 = 12% |
+| H_A'      | yes       | yes (static paragraph) | no             | 1/16 = 6%  |
+| H_P       | yes       | yes (per-turn banner)  | no             | 7/16 = 44% |
+| H_D       | no        | yes (per-turn banner)  | yes            | 7/16 = 44% |
+
+H_P is the Phase-6A cell: the same per-turn phase banner as H_D with the edit
+tool present every turn and no gating (SWE_LAB_GATE=0; verified in the traces --
+all 10 request nodes carry edit). It was run on the same pilot grid (5 x2 + 2-task
+x3 topup = 16 eps, dots3, T=4). H_P *exactly* reproduces H_D's 44% and solves the
+same two instances (11066 5/5-style, 11206).
 
 ## What the behaviour profile says
 
@@ -46,13 +53,15 @@ this n. The harness effect is the write rate, not write quality.
 
 ## Two findings worth keeping
 
-**The instruction text is not the mechanism.** H_A' does not recover any of the
-gap (1/16 vs 2/16 is noise at this n), and its dominant failure is still the
-all-inspect episode. Worse, the paragraph's own wording ("first spend a turn or
-two with bash locating the code that matters") is what a model already prone to
-inspecting needs least: the static text reinforces inspection rather than
-converting it into an edit. Behavioural advice delivered as prose cannot move an
-agent whose failure is that it never stops reading.
+**Static instruction text is not the mechanism; the per-turn banner is.** H_A'
+does not recover any of the gap (1/16 vs 2/16 is noise at this n). But H_P --
+the same behavioural content delivered as a per-turn, turn-numbered phase banner
+("PHASE 2 of 3 -- EXECUTE ... apply the repair now") with no enforcement --
+recovers the *entire* H_D gap (7/16 = 44% in both). The distinction the first
+triangle missed: the phase text works because it fires every turn at the point of
+decision, not because it is static advice the model must remember. The paragraph's
+wording ("first spend a turn or two locating the code that matters") also
+reinforces inspection, which a model already prone to inspecting needs least.
 
 **The real-SWE gain is not test-driven either.** test_after_edit is 0% in all
 three arms: no episode in any arm -- including H_D, whose phase 3 says "re-run the
@@ -67,9 +76,17 @@ writes cannot pass.
 
 ## Consequence for the program
 
-The causal story is now: **runtime-enforced structure > static instruction**, and
-the pilot's +32 points are attributable to the enforcement, not to the prompt
-wording. This is why the Phase 4 route failed for an additional reason worth
+The causal story is now: **per-turn announcement > enforcement = static prose**.
+The pilot's +32 points are attributable to the per-turn banner, and the runtime
+enforcement -- removing the edit tool during recon -- adds nothing measurable on
+top of it (H_D 44% = H_P 44% at the pilot; H_D 25% = H_P 25% at wide T=6; the
+silent gate alone, H_G, sits at the free-agent floor). The wide-set 2x2 and the
+T=6 decomposition confirm the same ordering at a second operating point
+(tools/swe_lab/runs/swe_2x2.md, swe_6c_matrix.md). What the runtime is doing to
+the agent is not restricting which tools exist; it is telling the agent, every
+turn, what its current job and remaining budget are, at the moment the agent
+chooses its next action. This is why the Phase 4 route failed for an additional
+reason worth
 recording: SFT on the teacher's conversation can at best teach prose that mimics
 the guidance. The part that produced the effect -- being unable to spend a turn
 without editing -- is a property of the harness, and a 0.6B student that emits no

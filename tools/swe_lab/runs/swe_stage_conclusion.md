@@ -3,6 +3,16 @@
 Chain: Action affordance -> behavioural control -> task outcome -> trajectory
 quality -> policy transfer.
 
+> Phase 6 update (see swe_2x2.md and swe_6c_matrix.md): the affordance framing
+> below was corrected by the 2x2. The per-turn phase *banner* (H_P, edit tool
+> present every turn, no gating) reproduces H_D exactly -- 7/16 = 44% on this
+> pilot grid, 5/20 = 25% at wide T=6 -- while the silent tool-list change (H_G)
+> sits at the free-agent floor. The "runtime enforcement that matters" is the
+> per-turn announcement of phase and remaining budget, not the tool removal; the
+> tool availability is a confounded channel that carried the banner in H_D.
+> Section 1's tool-availability claim is the pre-decomposition statement; the
+> numbers below are unchanged and still true, the causal attribution is not.
+
 ## 1. Action affordance
 
 H_D differs from H_A in one mechanically load-bearing way: in the recon phase

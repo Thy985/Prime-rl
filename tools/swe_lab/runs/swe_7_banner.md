@@ -27,6 +27,7 @@ stays reproducible.
 | H_P         | full phase text (PLAN / EXECUTE / FEEDBACK) | phase boundary (recorded reference) |
 | H_PHASE     | full phase text                      | every turn               |
 | H_SYS       | full phase text (as H_P)             | phase start, system role |
+| H_REPLAY    | full phase text                      | turn 1, 3, 5 (replay)   |
 
 Injections are counted straight out of the traces, not assumed from the config.
 Verifiers re-roots a branch whenever the advertised tool set changes and
@@ -45,6 +46,7 @@ in the smoke, one re-rooting artefact.
 | H_P       | 25%   |  35%  |  65%     | phase start    | 3.0           |  0.11     |  5.7    |  3.5            |  1.40        |
 | H_PHASE   | 15%   |  25%  |  75%     | every turn     | 5.7           |  0.08     |  5.7    |  5.0            |  1.25        |
 | H_SYS     | 15%   |  25%  |  75%     | phase start    | 3.0           |  0.09     |  5.8    |  4.5            |  1.30        |
+| H_REPLAY  | 15%   |  20%  |  80%     | turn 1,3,5     | 3.0           |  0.08     |  5.6    |  4.0            |  1.25        |
 
 inj/ep (raw) is the number of banner messages the conversation actually carried,
 counted from the traces (re-rooting duplicates included -- the model reads them
@@ -106,24 +108,34 @@ solve rate rather than scattering around it. The user-role interruption that
 lands at the decision point is part of what does the work; the same words
 arriving as a system message do not carry it.
 
-H_SYS and H_PHASE are the two clean single-factor comparisons in the run, and
-they agree: each one drops 25% -> 15% and costs the same ~10 points, one for
-moving the banner to the system role and one for moving it to every turn.
-H_ACTION is a two-factor arm (stripped content *and* every-turn cadence) that
-also lands at 15%, consistent with either factor or both. H_A (no banner) is
-0%, H_ONCE (content and role right, cadence at one) is 5%, H_NEUTRAL (role and
-cadence right, content inert) is 5%.
+**The timing is load-bearing.** H_REPLAY carries the identical H_P text at the
+same injection count -- 3 per episode -- but spaces them at turns 1, 3, 5
+instead of the phase boundaries. It drops from 25% to 15% solve, 35% to 20%
+edit, 0.11 to 0.08 state_chg, and inspect_run_max worsens from 3.5 to 4.0. This
+is the cleanest timing comparison in the run: the only thing that changes is
+*when* the same text arrives. H_REPLAY lands 3.0 injections per episode versus
+H_P's 3.0 -- same number, same content, same role -- and still drops 10 points.
+
+That is now four load-bearing dimensions. H_SYS (role) and H_REPLAY (timing)
+are the two clean single-factor comparisons, and they agree: each one drops
+25% -> 15% and costs the same ~10 points. H_PHASE (every-turn cadence) also
+drops 25% -> 15%. H_ACTION is a two-factor arm (stripped content *and*
+every-turn cadence) that also lands at 15%. H_A (no banner) is 0%, H_ONCE
+(content and role right, one injection) is 5%, H_NEUTRAL (role and cadence
+right, content inert) is 5%.
 
 Repetition is the one factor whose step is larger than the others: going from
 one injection to the phase-start cadence is 5% -> 25%, a 20-point step.
 Repetition is the necessary condition; role, cadence and content are the
 sufficient ones.
 
-So the dose-response over injection frequency at full phase content is 1 -> 5%,
-3 (phase starts) -> 25%, 5.7 (every turn) -> 15%. Non-monotone, with the peak
-at the phase boundaries. Repetition is necessary (1 vs 3), and repetition at
-the wrong spacing is worse than not repeating at all beyond the boundary
-(5.7 < 3).
+So the dose-response over injection frequency at full phase content, holding
+timing at the phase boundaries, is 1 -> 5%, 3 -> 25%, 5.7 -> 15%. Non-monotone,
+with the peak at three injections. But the cadence comparison hides the real
+story: at the same count (3 injections), timing alone is worth 10 points --
+phase boundaries give 25%, arbitrary turns give 15%. Repetition is necessary
+(1 vs 3), repetition at the wrong timing is diluted (5.7 -> 15%), and repetition
+at the right timing is what maximises the effect (3 at boundaries -> 25%).
 
 ## What the trajectory actually says
 
@@ -193,9 +205,11 @@ content are each independently load-bearing.
       |
   task outcome
 
-The three dimensions each drop the effect from 25% to 15% when misspecified,
-and repetition is the necessary condition underneath them all: one announcement
-of the right content and role still yields the baseline.
+The three dimensions -- content, cadence and message role -- each drop the
+effect from 25% to 15% when misspecified. H_REPLAY adds a fourth: timing at
+the phase boundaries rather than arbitrary turns, also worth 10 points.
+Repetition is the necessary condition underneath them all: one announcement of
+the right content and role still yields the baseline.
 
 The announcement has a marginal cost as well as a marginal benefit. The benefit
 is one redirected turn: the injected text re-aligns the agent's next action to
@@ -283,10 +297,11 @@ Two items remain open.
 Neither factor step is statistically established at n=20. The content step
 (neutral 5% -> action/full 15%, every-turn) is 1 vs 3 solves; the cadence step
 (every-turn full 15% -> phase-start full 25%) is 3 vs 5 solves; the role step is
-3 vs 5 solves. The ordering is consistent across solve, edit%, state_chg and
-inspect_run_max in each case, so the directions hold, but a larger n on
-H_NEUTRAL / H_ACTION / H_PHASE / H_P / H_SYS would tighten the gaps -- no new
-arm is needed.
+3 vs 5 solves; the timing step (arbitrary-turn full 15% -> phase-start full
+25%) is also 3 vs 5 solves. The ordering is consistent across solve, edit%,
+state_chg and inspect_run_max in each case, so the directions hold, but a
+larger n on H_NEUTRAL / H_ACTION / H_PHASE / H_P / H_SYS / H_REPLAY would
+tighten the gaps -- no new arm is needed.
 
 Whether the cost mechanism is steering cost or attention failure remains open
 and is not resolvable by any arm in this run. It would need a counterfactual in

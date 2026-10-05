@@ -28,13 +28,21 @@ paragraph present, 428 without.
 
 | harness | no_write | calls (unsolved / solved) | top unsolved sequence |
 |---------|----------|---------------------------|----------------------|
-| H_A     | 57%      | 3 / 4                    | `inspect inspect inspect inspect` x8 |
-| H_A'    | 47%      | 4 / 4                    | `inspect inspect inspect inspect` x6 |
-| H_D     | 33%      | 3 / 3                    | `inspect inspect inspect inspect` x2 |
+| H_A     | 88%      | 3 / 4                    | `inspect inspect inspect inspect` x8 |
+| H_A'    | 88%      | 4 / 4                    | `inspect inspect inspect inspect` x6 |
+| H_D     | 56%      | 3 / 3                    | `inspect inspect inspect inspect` x2 |
 
-Conditional on the episode writing anything at all, resolve is H_A 2/8 = 25%,
-H_A' 1/9 = 11%, H_D 7/13 = 54%. So H_D helps twice: more episodes reach a write
-(13 vs 8-9 of 16), and writes that happen are about twice as likely to land.
+The `no_write` figures were recomputed with the corrected `kind_of`
+(`>(?!&)\s*(?!/dev/null)\S`); the earlier version counted `find ... 2>/dev/null`
+and `grep ... 2>&1` as tree writes, so unsolved all-inspect episodes were
+mislabelled as having written. Corrected: every unsolved episode in H_A and H_D
+wrote nothing at all; one H_A' unsolved episode wrote and failed.
+
+Conditional on the episode writing anything at all, resolve is H_A 2/2 = 100%,
+H_A' 1/2 = 50%, H_D 7/7 = 100% (corrected -- the old 25% / 11% / 54% was the
+same /dev/null artefact). So H_D helps once, not twice: more episodes reach a
+write at all (7 of 16 vs 2), and a write that does happen lands in every arm at
+this n. The harness effect is the write rate, not write quality.
 
 ## Two findings worth keeping
 

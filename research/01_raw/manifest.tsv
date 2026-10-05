@@ -1,0 +1,201 @@
+# Raw evidence manifest — generated at archive time
+# path	sha256_32	bytes	mtime	files	role
+# NOTE: outputs/ is gitignored; nothing here is tracked by git.
+# This manifest is the proof that a run was unchanged at archive time.
+#
+dsh-session/session.v4.jsonl	0f2455bec92b28e1235e4c8cab26610f	28865619	2026-10-06 06:44	-	ai session export (NOT copied; 86MB total)
+subagents/55978c6a-46c0-441b-8f1c-31afcbf12348/session.v4.jsonl	57b41963799cdef6cad8986261c93bf4	29085466	2026-10-06 06:44	-	ai session export (NOT copied; 86MB total)
+subagents/e374ab45-75e4-4c58-998d-7c8f95e29656/session.v4.jsonl	16e43ae465bd39f0121c25e914b2eeeb	28161312	2026-10-06 06:44	-	ai session export (NOT copied; 86MB total)
+outputs/base-eval	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	9	E01 infra
+outputs/base-eval-smoke	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	9	E01 infra
+outputs/base-eval-v2	6e357c89e2b8fae5ae0a2aea6820ac73	-	2026-09-28	12	E01 infra
+outputs/base-vs-sft	-	-	2026-09-28	25	E01 infra
+outputs/compact-sft-heldout	-	-	2026-09-28	1	lab tier run
+outputs/compact-sft-train	-	-	2026-09-28	2	lab tier run
+outputs/heldout-willcb	-	-	2026-09-28	2	E01 infra
+outputs/m2-budget-r1	01f90e99011eabef5f15673a20cc341c	-	2026-10-03	14	E01 infra
+outputs/m2-budget-r2	a681ffeee3802b10e53ddf399b3b92e9	-	2026-10-03	14	E01 infra
+outputs/m2-budget-r3	786f718dd4234f9a0a0c0e35a4f5b2a4	-	2026-10-03	12	E01 infra
+outputs/m2-hd-r1	b4984a427f02b9554d899111b00fc764	-	2026-10-03	14	E01 infra
+outputs/m2-hd-r2	e734b37bd11e34796227696a5964186e	-	2026-10-03	14	E01 infra
+outputs/m2-hd-r3	cef16015c8b305ed61b24209c2c0b4ec	-	2026-10-03	12	E01 infra
+outputs/pi-base	78767b9e42229b1f52018b8a8200544e	-	2026-10-04	14	E01 infra
+outputs/pi-real-D	7795352eb3e02775c7d227db5d97b216	-	2026-10-04	14	E01 infra
+outputs/pi-real-D-lora	e3e3dd757093f0715c7f57d597fd9a48	-	2026-10-04	10	E01 infra
+outputs/reverse_text_local	-	-	2026-09-28	1	lab tier run
+outputs/rl-2x2-hA	0d2a905bd478ee76698b69a07132676b	-	2026-10-05	14	E06 2x2
+outputs/rl-2x2-hD	9c131d8c421d4cb3ad146ffb4c4af94b	-	2026-10-05	14	E06 2x2
+outputs/rl-2x2-hD2	300c779964fb2b039ccbf76ce08f6254	-	2026-10-05	14	E06 2x2
+outputs/rl-2x2-hG	5b7558ef428c0e492faed7cd0abaf08b	-	2026-10-05	14	E06 2x2
+outputs/rl-2x2-hG2	426cf7b20946bba0d7cf81e04f10ff4a	-	2026-10-05	14	E06 2x2
+outputs/rl-2x2-hP	86032dfdf079b6ec50407ed381e106b0	-	2026-10-05	14	E06 2x2
+outputs/rl-2x2-hP2	3ecf34e456670509871f025b6067783e	-	2026-10-05	14	E06 2x2
+outputs/rl-6c-bunny-hA-T6	362a492fd28280dbadeda2a7b59de413	-	2026-10-05	14	E06/E08A provider-blocked
+outputs/rl-6c-bunny-hAdapt-T6	ab2bc5419e5966196846f6a0d72294a3	-	2026-10-05	13	E06/E08A provider-blocked
+outputs/rl-6c-bunny-hD-T6	14090b203c4f22418150025fa3ccae1a	-	2026-10-05	12	E06/E08A provider-blocked
+outputs/rl-6c-hA-T2	e6fa142bbfb506903c325e3b6debff12	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hA-T6	a5f3d43af4e827200abf8597ef900010	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hA-T8	e4e62d159a2b7055ef5d1e847f9e675a	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hAdapt-T2	80b21adc059da191a9feb56e62df1707	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hAdapt-T6	445c6e364d0fa66d6f9abf0c64278b5b	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hAdapt-T8	001f3b701264244d9796ac73ce9e4ba7	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hD-T2	0224557f65c58f4de40ae87ad257984f	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hD-T6	ecc18adf2530b61b670268e2b789bf83	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hD-T8	a24777e8cf389c15ec195f4c47d11a80	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hG-T6	289587ee77cc583ee4d61090d4177204	-	2026-10-05	14	E06 budget matrix
+outputs/rl-6c-hP-T6	1f5a6148fd075539a6415601f8bddd2b	-	2026-10-05	14	E06 budget matrix
+outputs/rl-7-hAction	8df841f4baba4df62a821f431a3b53c1	-	2026-10-05	14	E07 banner arm
+outputs/rl-7-hNeutral	5975098928c4f03724c277842a78d986	-	2026-10-05	14	E07 banner arm
+outputs/rl-7-hOnce	1d2ae4400440b5a5608b2119ff3dd318	-	2026-10-05	14	E07 banner arm
+outputs/rl-7-hPhase	38f6b94aa34747ba835c0fa74efe93a6	-	2026-10-05	14	E07 banner arm
+outputs/rl-7-hSys	219b9343e9fdf51ca348f4fc073b9d0c	-	2026-10-05	14	E07 banner arm
+outputs/rl-8-hReplay	2a37a83997ed0506659ca4e072b48a2e	-	2026-10-05	14	E08 arm
+outputs/rl-8c-hA-s1	9c6b3570ca81846956de599f855f2d71	-	2026-10-05	14	E08 seed
+outputs/rl-8c-hA-s2	444c21f80e6244bb413f9826113a5489	-	2026-10-05	14	E08 seed
+outputs/rl-8c-hOnce-s1	ce3e45caee8a7726a14d8beb756c61f1	-	2026-10-05	14	E08 seed
+outputs/rl-8c-hOnce-s2	b37c4e4d93096f6fb6bd0950bbea295b	-	2026-10-05	14	E08 seed
+outputs/rl-8c-hP-s1	94eb22008b3017daa6ec2eb1bbac40e1	-	2026-10-06	14	E08 seed
+outputs/rl-8c-hP-s2	60e4f13af1ea30f85a54f9da7925de57	-	2026-10-06	14	E08 seed
+outputs/rl-8c-hReplay-s1	12a807488cc7d56db86c26d986fe8f36	-	2026-10-06	14	E08 seed
+outputs/rl-8c-hReplay-s2	8783bcd2ab5df9dae07dcbf7faca4f92	-	2026-10-06	14	E08 seed
+outputs/rl-adapt	eb3d68aef3d5e75c2f0f84a1a8b924d2	-	2026-10-05	14	E06 adaptive
+outputs/rl-hA	d8962daf326a4e8da1dac590cd13afb7	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-T2	84a019bbbc8c5e33ccaff709fe1c614c	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-T2-topup	13efd20cd0183ff041c91bb318b35d6a	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-T6	58b00902f34b312b3fc42eb7815e331d	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-T6-topup	890aaa7d0d11367d5ae114491d6cb771	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-T8	618da429654a8db45b0e8e1b65514797	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-T8-topup	5a3227728652fc2a1cbf38bb14feb341	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hA-topup	7c6849605d611114739f4b327a3bbcaf	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hAp	a58b171d450b10b0762a6ac5df75dc10	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hAp-topup	8c1e3a47352bdd5dfb0f3c2fe5159542	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD	f1f4445eb212a9bb5753aaff7fe18876	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-T2	88cc93689963a1703da30ba1792ae169	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-T2-topup	fdadb28cfd0deed3524e36132bb370bd	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-T6	143078c9bc26b0357b9d30a7f57cd08a	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-T6-topup	9ca0847e3f28e79fe9e0d2db06899f46	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-T8	97f34af38ef24742dfbbd42629dde327	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-T8-topup	5f0d6486843509d4b90c6d57d7859896	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hD-topup	20b0d6c02039c1e4192ba58693e482cc	-	2026-10-04	14	E05 pilot/budget
+outputs/rl-hP-pilot	eb381d41a0dc6ef6d343ea34810a969b	-	2026-10-05	14	E05 pilot/budget
+outputs/rl-hP-pilot-topup	c0b4a6b5d946ea68dd31ab5b5f83cbe2	-	2026-10-05	14	E05 pilot/budget
+outputs/rl-sb-hA	43a90d134f33d81098f4be8d64e48822	-	2026-10-04	14	E05 second model
+outputs/rl-sb-hA-topup	e18f5c1efe6d4bc28368335e3a4f4332	-	2026-10-04	14	E05 second model
+outputs/rl-sb-hD	f3995b69fd96e71e1852773a9cc836a5	-	2026-10-04	14	E05 second model
+outputs/rl-sb-hD-topup	bb33755760a5a5590b34156668b6f163	-	2026-10-04	14	E05 second model
+outputs/rl-smoke	4bb50faa034fd01966ed7711d0a39728	-	2026-10-04	14	lab tier run
+outputs/rl-wide-hA	e0859bbfdc5c4bb4e4d5febea13ebcab	-	2026-10-04	14	E05 wide set
+outputs/rl-wide-hD	b347d55135393fa60565793f672731dc	-	2026-10-05	15	E05 wide set
+outputs/sft	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	30	E01 infra
+outputs/sft-attempt3	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-27	7	E01 infra
+outputs/sft-attempt4	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	7	E01 infra
+outputs/sft-compact	a615cf4102e94109e75094bf5fc666cb	-	2026-09-28	7	E01 infra
+outputs/sft-compact2	4c9a4ec143077fdc89cd4d11f0db5549	-	2026-09-28	12	E01 infra
+outputs/sft-lora	de995123093c846458c0918ca4d3d740	-	2026-09-28	12	E01 infra
+outputs/sft-mini	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	7	E01 infra
+outputs/sft-mini2	fdec142f13e1d3647af6cccb82730b79	-	2026-09-28	10	E01 infra
+outputs/sft-offload	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	7	E01 infra
+outputs/sft-small	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	7	E01 infra
+outputs/sft-smalllb	e3b0c44298fc1c149afbf4c8996fb924	-	2026-09-28	7	E01 infra
+outputs/short-overfit-train	-	-	2026-09-28	1	E01 infra
+outputs/short-ovf	b3365690b5f1c32ce6e79e61f661a5f9	-	2026-09-28	12	lab tier run
+outputs/short-ovf-eval	-	-	2026-09-28	16	lab tier run
+outputs/short-ovf-holdout	-	-	2026-09-28	1	lab tier run
+outputs/short-ovf-train	-	-	2026-09-28	1	lab tier run
+outputs/smoke-adapt	d0649355b7d94ab9b86a3c05b792558f	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke-adapt-t8	2c50cad8c0cfee155ac454c91a9015ad	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke-hG	b787553b1ba8c461670b79538518411f	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke-hP	a401b030b8f149c258250a70163ecdb0	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke-sympy	92cbd8a913543723231f49b86dc778ee	-	2026-10-04	14	protocol smoke (not evidence)
+outputs/smoke7-hNeutral	609adac88f1c8cf862dd8397b12f385d	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke7-hOnce	3356bf8a34543c0069e4742ae4d86f2d	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke7-hSys	5c0f43eda9f507e4026f8cf96b25a129	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke8-bunny-hP	3e9a1786fe840a91af22c38a6f3e7143	-	2026-10-05	11	protocol smoke (not evidence)
+outputs/smoke8-deeps-hP	f5e57aaa318c8a5a088db396f8d57427	-	2026-10-05	11	protocol smoke (not evidence)
+outputs/smoke8b-bunny	9ec418fd2ab55b4765f4c46ededc37c5	-	2026-10-05	11	protocol smoke (not evidence)
+outputs/smoke9-dots3-ctrl	5d2039e5b940b9b9e597a5eae36dc24f	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/smoke_bunny_subagent	ef15fbc5a8e5ac1d4b3eec1af24cde2a	-	2026-10-05	14	protocol smoke (not evidence)
+outputs/swe-lab--deepseek-v4-flash--23a49121	12e4c08175cbcb055c3bedbe3c4dc74f	-	2026-10-01	14	lab tier run
+outputs/swe-lab--deepseek-v4-flash--753e34fe	c52718a37b0c1cab2a6bca55a1a405ca	-	2026-10-01	14	lab tier run
+outputs/swe-lab--deepseek-v4-flash--b302da92	e96b74764f4ad052e14694b4cd6fc5aa	-	2026-10-01	14	lab tier run
+outputs/swe-lab--deepseek-v4-flash--f13d0d3d	6589a5ddcf2d5ab96fca36105bd069fc	-	2026-10-01	14	lab tier run
+outputs/swe-lab--dots3-note-prev--12ebe5a6	a8971325eba37230e0d795f5a33a8f14	-	2026-10-02	5	lab tier run
+outputs/swe-lab--primeintellect--qwen3-0.6b--null--73f8f523	-	-	2026-10-01	3	lab tier run
+outputs/swe-lab--primeintellect--qwen3-0.6b--null--80294499	-	-	2026-10-01	1	lab tier run
+outputs/swe-lab--qwen3-0.6b--2a126853	823e9c3dfa6ea5882f9cd098409bfdc6	-	2026-10-01	14	lab tier run
+outputs/swe-lab-abc-A1	38f2bc7c7219575b12dfca75bfa96556	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-A2	6ac2468a9b6c48a73f6a85c2513c0893	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-A3	1ec83a4ca9cba44879884861c51ca50e	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-B1	4ab40950370c25677cf76991573e963f	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-B2	75929ebe0020cfd43f407f7004428d01	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-B3	31c83689fb8d4893ab953b420e99fecd	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-C1	07dd682d37f905b5f2e770af8ec6ec07	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-C2	00d42f420ad3fe2b8ee4db3a73bff157	-	2026-10-02	14	E04 abc
+outputs/swe-lab-abc-C3	362be3d759f8362a1e6fc056d6d2ee44	-	2026-10-02	14	E04 abc
+outputs/swe-lab-budget-hA	9bce8a476b372078d09baaa14c2ff3ff	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hA2	af351f71845d5b9dabcf0d8a601b8cd3	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hA3	80226ce541da09708cea0889fc263dbd	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hD1	6fb484386032cc0b0261811855f2f14b	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hD2	5ce1af3dd2b34345d5d0de5579d8cb7b	-	2026-10-02	12	lab tier run
+outputs/swe-lab-budget-hD3	7c07203627f00d4d4961e476accf1972	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hD4	130bee7dbbefdd2ee8144a9eac90ec6c	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hE1	983b051ac92341c1e2045ce94137fb79	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hE2	f66eb6dfe940b2b79a9d9dd68577ea5a	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hE3	60c98ed9314c4a9db131fd121444a472	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hF1	5c8d621c44f02a4f55f08b0fa987a89d	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hF2	3741ad27c9918b50314a8912888abfd6	-	2026-10-02	14	lab tier run
+outputs/swe-lab-budget-hF3	f2fa799670487cca6799881d7519837c	-	2026-10-02	14	lab tier run
+outputs/swe-lab-bunny1	afd7f0eae3742d2420487099c2cf44f1	-	2026-10-01	14	lab tier run
+outputs/swe-lab-bunny2	c9bf1cd25180851b1373f9289195c69a	-	2026-10-01	14	lab tier run
+outputs/swe-lab-bunny3	2362da811f1fa28b634f6e31e116a778	-	2026-10-01	14	lab tier run
+outputs/swe-lab-bunny4	8cc8b7c2c971b65a6597bee1a1d2900e	-	2026-10-01	14	lab tier run
+outputs/swe-lab-bunny5	903a10020ef7f50a00ffa9118cfb8fc2	-	2026-10-01	14	lab tier run
+outputs/swe-lab-ded1	e6e9f6bf066e1419b53c8851ec95fd23	-	2026-10-01	14	lab tier run
+outputs/swe-lab-ded2	4a0003d3d7d4fa7fd84aed46dc64abb3	-	2026-10-01	14	lab tier run
+outputs/swe-lab-ded3	f60e25ca186f00a6719be1e35ea442ec	-	2026-10-01	14	lab tier run
+outputs/swe-lab-ded4	21f4bcbe4ed5e03d1d498c07d4d259f1	-	2026-10-01	14	lab tier run
+outputs/swe-lab-ded5	84f826160ae61705f2bedce572f7ad0f	-	2026-10-01	14	lab tier run
+outputs/swe-lab-dots1	80731ad86290c73120578df8828a5084	-	2026-10-01	14	lab tier run
+outputs/swe-lab-dots2	dff0e24fd2deb29cea45be0592093912	-	2026-10-01	14	lab tier run
+outputs/swe-lab-dots3	f19968d1dace66defc9b6c642efd7686	-	2026-10-01	14	lab tier run
+outputs/swe-lab-dots4	c67b35f7d756039140d93b96e6b09da5	-	2026-10-01	14	lab tier run
+outputs/swe-lab-dots5	91f1fa2dead36c7813f4b6df52737335	-	2026-10-01	14	lab tier run
+outputs/swe-lab-free1	2c78b238ed19ea82d38d546a3581661c	-	2026-10-01	14	lab tier run
+outputs/swe-lab-free2	a7f2d55157a575ccd24b5cc0d66a2124	-	2026-10-01	14	lab tier run
+outputs/swe-lab-free3	e06c69c75eb2bbe987cbce3670d13171	-	2026-10-01	14	lab tier run
+outputs/swe-lab-free4	f43d710d8c9e88c81cab2adedeaf837c	-	2026-10-01	14	lab tier run
+outputs/swe-lab-free5	ebc4085cd1e0a4a805750404de73f298	-	2026-10-01	14	lab tier run
+outputs/swe-lab-hB-n8	eb35e1cefca0afccef601f6dffe96a4c	-	2026-10-02	14	lab tier run
+outputs/swe-lab-hC-n8	d232a41b6bbc25f69c83688a807c25f7	-	2026-10-02	14	lab tier run
+outputs/swe-lab-hE-smoke	f9c84caeb837dddce83fa01906a2b10a	-	2026-10-02	14	lab tier run
+outputs/swe-lab-hF-smoke	e9d1ee72de1a466f33efe4381ef41a55	-	2026-10-02	14	lab tier run
+outputs/swe-lab-harnessA	3fe5bc3a828d4763684f63be53478d8a	-	2026-10-02	14	E04 harness arm
+outputs/swe-lab-harnessB-noedit	9e37fd15c034bac702a412cdafa55335	-	2026-10-02	14	E04 harness arm
+outputs/swe-lab-harnessC-patchfirst	22fdaf0c2925d09d59a9a99123e2a2ff	-	2026-10-02	14	E04 harness arm
+outputs/swe-lab-hd-smoke	bd13cea153fcf14913a3fee578717da5	-	2026-10-02	14	lab tier run
+outputs/swe-lab-hd-smoke2	de438b17798b1d8091f8b0925358ccad	-	2026-10-02	14	lab tier run
+outputs/swe-lab-rep1	94728f2f9ff7500b05f04cc6da895f0f	-	2026-10-01	14	lab tier run
+outputs/swe-lab-rep2	20a43ac7c18bc9acb1240c677229f247	-	2026-10-01	14	lab tier run
+outputs/swe-lab-rep3	83a57e8d826ba4c41063ad803ab8743b	-	2026-10-01	14	lab tier run
+outputs/swe-lab-rep4	14cecb534fd8c929878c62b13213a9a3	-	2026-10-01	14	lab tier run
+outputs/swe-lab-rep5	fa2fe0bf61f2f43065b6456081e20d29	-	2026-10-01	12	lab tier run
+outputs/swe-lab-tier4-dots	b0a36f6c44b687e61735a515a886bebb	-	2026-10-02	14	lab tier run
+outputs/swe-lab-tier5-hA	c45792f6fc8c6c0f47b1fb5d485482f3	-	2026-10-02	14	lab tier run
+outputs/swe_runs	-	-	2026-10-04	54	lab tier run
+tools/swe_lab/runs/behavior_profile.md	fd34ed44dc6886e7d0ba17bce4640792	3777	2026-10-03	-	canonical writeup
+tools/swe_lab/runs/cross_model.md	038bc0e226131176e65736ed000ba34e	5003	2026-10-03	-	canonical writeup
+tools/swe_lab/runs/phase4_audit.md	073f61efe1134505ee93567f1a2922e7	1880	2026-10-02	-	canonical writeup
+tools/swe_lab/runs/phase4_data.md	4f1f33257248ec37dba2498256df8932	2473	2026-10-02	-	canonical writeup
+tools/swe_lab/runs/swe_2x2.md	eb9800205ccca93ad03d72d26362fa6f	9539	2026-10-05	-	canonical writeup
+tools/swe_lab/runs/swe_6c_matrix.md	8c54388730b820f9705edf7789402c68	11042	2026-10-05	-	canonical writeup
+tools/swe_lab/runs/swe_7_banner.md	fde9c20f4bb4ae4dfcadf4840764c9a8	17793	2026-10-05	-	canonical writeup
+tools/swe_lab/runs/swe_8c_expanded.md	5ad62f3598b20e360a28897f2ae5ecca	8464	2026-10-06	-	canonical writeup
+tools/swe_lab/runs/swe_bench_pilot.md	b59afbf423ee915ffa23e5b0a4c01255	7449	2026-10-04	-	canonical writeup
+tools/swe_lab/runs/swe_budget_sweep.md	b8e661db68887399d8b28300100caed6	3949	2026-10-04	-	canonical writeup
+tools/swe_lab/runs/swe_distill_verify.md	4de9ce22cf2fae09554fe89528481f3a	3903	2026-10-04	-	canonical writeup
+tools/swe_lab/runs/swe_harness_triangle.md	cc16064c6fd948a0e6651e0dbbdac338	8827	2026-10-05	-	canonical writeup
+tools/swe_lab/runs/swe_second_model.md	ff873e8c84614ae01fce96034eef97ed	1747	2026-10-04	-	canonical writeup
+tools/swe_lab/runs/swe_stage_conclusion.md	7c344725b528421420c55b6db1fe89c7	5808	2026-10-05	-	canonical writeup
+
+# Canonical writeups are git-tracked; their hashes double as drift detection.
+# Untracked-and-not-covered: 07_archive/ (superseded drafts), 03_analysis/ (derived).

@@ -1,0 +1,82 @@
+83c990b000c22dbeb719d6330b6bb9809f27c664	2026-10-06T06:37:44+08:00	chore: commit tier4/tier5 materialized fixture dirs and .python-version
+a5975ac74eb8cba6aefc1965f1422b4cef2b4ddc	2026-10-06T06:16:43+08:00	exp: Phase 8C final -- n=60 (3 seeds x 20 tasks) revises Phase 8B: H_P 25% was single-seed noise (seed-2 rerun 0/20); H_REPLAY 17% > H_P 13% (p=0.77, timing NOT a real dimension); banner vs no-banner and multiple-vs-single injection survive (p=0.031/0.008); mediation chain (state_chg 0.04->0.07, solved-only 0.17->0.30, n_calls flat, first_edit not earlier) holds at n=60
+b257519feb4432d7f0a34179597aac2ec63cc702	2026-10-06T06:14:33+08:00	exp: Phase 8C final -- n=60 (3 seeds x 20 tasks) revises Phase 8B: H_P 25% was single-seed noise (seed-2 rerun 0/20); H_REPLAY 17% > H_P 13% (p=0.77, timing NOT a real dimension); banner vs no-banner and multiple-vs-single injection survive (p=0.031/0.008); mediation chain (state_chg 0.04->0.07, solved-only 0.17->0.30, n_calls flat, first_edit not earlier) holds at n=60
+51f7ae5267a856fe16269cdb365e9a21a4a025aa	2026-10-05T23:47:09+08:00	exp: Phase 8A -- add bunny cross-model replication configs (H_A/H_ONCE/H_P, same banner semantics as dots3 Phase 7, timeout.rollout=1200 for bunny speed)
+6315a6e069ced2d80d2b80e0783c8f37a2284856	2026-10-05T23:39:53+08:00	fix: add --no-sync to run_swe_eval.sh wrapper (deep-ep metadata fails on aarch64)
+0807caa0c4c4d5d84d452090421e1b300ee1f341	2026-10-05T22:47:57+08:00	exp: Phase 8C -- per-instance paired analysis (H_P vs H_A significant p=0.031, H_REPLAY changes which instances solve not just rate) and trajectory mediation chain (action allocation confirmed: state-changing ratio 5.5x increase, n_calls flat, first_edit_turn not earlier)
+3236557572d9b5f1706793bc27ec5d3c726b8ef1	2026-10-05T22:40:26+08:00	exp: Phase 8B -- H_REPLAY at 15%: timing at phase boundaries is a fourth load-bearing dimension (same count as H_P, 15% vs 25%); four dimensions all independently measured
+571774e43bd335995106d54720d06e07430a6e49	2026-10-05T21:54:21+08:00	exp: Phase 8 prep -- add SWE_LAB_BANNER=replay mode (3 injections at turns 1/3/5, decouples count from phase boundaries); DeepSeek-v4-flash configs for cross-model replication (H_A/H_ONCE/H_P, SWE_LAB_PROMPTS=0 for H_A); H_REPLAY config for dots3; analyzer ARMS updated
+d0985e941557316cbe1ed777d1938d9d89779b82	2026-10-05T21:43:55+08:00	exp: Phase 7 -- tone down the role claim per review: H_SYS shows system-role != user-role, not that interruption is causal; add the three-layer Phase 5->6->7 model, action-allocation framing, and a Boundary-of-the-claim section (runtime intervention changes action allocation, not reasoning)
+610450d35953a4ffdf0c1bdee1962416c33a7c69	2026-10-05T21:33:20+08:00	exp: Phase 7 -- H_SYS done at 15%: message role is load-bearing (user interruption, not standing instruction); three single-factor arms each cost ~10pt and repetition is the necessary condition; full decomposition written up
+7ca05d71d6eb5a308fab4056748eb3b9282ca8fe	2026-10-05T21:17:59+08:00	exp: Phase 7 -- correct injection measurement: report raw (H_ACTION/H_PHASE are every-turn, not phase-boundary); content and cadence are both independently demonstrated levers (content: neutral 5% -> action/full 15% at every-turn; cadence: every-turn full 15% -> phase-start full 25%)
+7e8346b0577592e49b820b5bb2703249fcbcc3e9	2026-10-05T21:01:17+08:00	exp: Phase 7 -- note the 2 H_PHASE rollouts were 600s timeouts, so 15% is a floor and the dilution finding is conservative
+d66e040218b16ba08ced3a004197fea0af6893ec	2026-10-05T21:00:00+08:00	exp: Phase 7 -- H_PHASE true data (15% solve, diluted not inert): content and cadence each worth half, they do not substitute; H_ACTION vs H_PHASE tie is the cleanest separation; mark the interruption-cost mechanism as inference not measurement
+3b4f0286e862cff11fe08a58b813dda6603e53df	2026-10-05T20:34:39+08:00	exp: Phase 7 -- five-arm banner decomposition done (H_A 0% H_ONCE 5% H_NEUTRAL 5% H_ACTION 15% H_P 25%): recency necessary, neutral status inert, content secondary; add SWE_LAB_BANNER_ROLE for the message-role control (H_SYS); correct the doc to the true data
+f3a91ba36957702f8fe00d80372fca06a069e0ee	2026-10-05T19:31:22+08:00	exp: Phase 7 banner decomposition -- SWE_LAB_BANNER modes (once/neutral/action/phase) inject per-turn control-plane text instead of per-phase; analyze_banner.py counts banner injections and trajectory metrics (state-changing ratio, inspect-run length, inspect-to-edit lag, edit-after-failed-test)
+b2207c3d4c64b21417dd6300854037d37a029d25	2026-10-05T17:20:12+08:00	exp: 6C cornering -- first_edit_turn decomposition (H_G does not push it, H_P does), pilot H_P=H_D 44% confirmation, bunny leg blocked by provider empty-responses (rerun staged, rollout timeout 600->1200)
+62f70d41a69bb42bd8a89fd673cab5cd939dd2f9	2026-10-05T16:54:08+08:00	exp: analyze_cross_model.py for the dots3+bunny budget matrix
+da08305bfc998d6b3b80660831545ef127395690	2026-10-05T16:22:30+08:00	exp: bunny Phase-6C configs incl. hP/hG T=6 decomposition arms
+ce618eed377cef0476891dd27898640afd1bd29b	2026-10-05T16:21:33+08:00	exp: pilot H_P reproduces H_D exactly (7/16=44%, same instances, edit tool present every turn) -- mechanism is the per-turn banner, enforcement adds nothing; rewrite triangle conclusion and stage-conclusion correction
+6aea58419f48ada41bb800cbce9f5ad505d8d811	2026-10-05T15:59:11+08:00	exp: 6C T=6 decomposition -- H_P (banner only) 5/20 = H_D 25%, H_G (gate only) 1/20 floor; banner is the mechanism, silent gating is not; affordance scheduling falsified at signal-bearing budget
+8f7a62b84c48444cb6a8a27d14b65283544463e8	2026-10-05T15:03:04+08:00	exp: Phase 6C budget matrix -- H_D inverted-U (T6=25% peak, T8=10%), H_A/H_ADAPT converge to 15% at T8; H_ADAPT never beats H_D (recon-2 tax), VERIFY rule never fires; budget-dependent harness value, v1 adaptive rules miscalibrated
+1908e3c5b3c19077f3dbe044d78a56c293801654	2026-10-05T11:27:25+08:00	exp: Phase 6C budget-matrix configs (T=2/6/8 x H_A/H_D/H_ADAPT, wide set, dots3 + space-bunny) and analyze_matrix.py
+3117af867a174d2893306fabfa14198441be5584	2026-10-05T11:24:42+08:00	exp: Phase 6A 2x2 analysis -- wide x T=4 is a floor regime (solve 0-7.5%, edit 0-0.12/ep), factorial underpowered at n=40; direction leans H_P (banner) > H_D > H_G > H_A on edits/tests; H_ADAPT recon-2 structurally late to edit at T=4; correct triangle no_write via fixed kind_of (writes land 100% in every arm; harness effect is write rate, not write quality)
+4b6854707f07ef52287a1bdb07758bd093ba6564	2026-10-05T10:02:54+08:00	exp: fix behavior classifier -- WRITE_RE no longer flags 2>/dev/null and 2>&1 as tree writes (H_A real edits 0/20 wide T=4, not 0.5/ep); add analyze_2x2.py for the Phase 6A factorial metrics
+2bae38d38cdb0e5f1ae16ca28cc79ed5546eb86e	2026-10-05T09:01:19+08:00	exp: Phase 6A/6B -- H_P/H_G 2x2 switches (SWE_LAB_PROMPTS/SWE_LAB_GATE + neutral system protocol) and H_ADAPT deterministic affordance scheduler harness (recon->execute->verify from observed calls, SWE_LAB_BUDGET)
+6bc971c6b361fbeadfa80907605d100e684addcd	2026-10-05T00:58:14+08:00	exp: stage conclusion -- action affordance to policy transfer, with wide-set calibration (pilot overestimated by 4x: +32pt -> +10pt on 20 instances)
+e559251f3b587d70f37d9aa39dcf35da22b1d234	2026-10-04T23:13:44+08:00	exp: second model (space-bunny 7B) replicates H_D gain on real SWE -- H_A 19% vs H_D 31%, same 5-instance grid
+a867f112d62a5378d2e5e9d152e5724ce9ac9060	2026-10-04T21:36:54+08:00	exp: budget sweep -- gap peaks at T=4 (+32pt) and vanishes at T=8 (-6pt); H_A self-discovers verify+repair at T=8; H_D gain is unit-budget efficiency not structural
+9136aac03e2f74b590ecc702d8ed5cf4785ae6e1	2026-10-04T20:41:36+08:00	exp: turn-by-turn mechanism probe -- the load-bearing gate is edit-tool absence (0 bash refusals in 48 eps), told-to-verify is never obeyed (0 test runs), H_D gets 3.5x more edits per episode
+247fc2fc70a1c625778ff8967d90f1fdf6e2f4e1	2026-10-04T20:20:01+08:00	exp: multi-repo real SWE -- per-instance interpreter + pytest nodeid resolution + per-repo candidate manifests; 12/12 sympy instances pass the gate
+625653bb4ea0e9b626ca0cbd7fd55d2b5672c214	2026-10-04T19:56:35+08:00	exp: H_A-prime control -- static behaviour text recovers none of the H_D gap (1/16 vs 2/16 vs 7/16); the gain is runtime-enforced, and no arm ever runs the test suite
+1df2989df6465794857afa57a41e7558c12db899	2026-10-04T13:51:14+08:00	exp: distillation verification -- dots3 D_D -> Qwen3-0.6B LoRA SFT shows no behaviour transfer (0/10 tool calls both, 0/10 resolve on real SWE)
+3786b0ae5cdc4b0a57bc0a526025b7e6c67a742f	2026-10-04T13:37:09+08:00	exp: pi-real-D-lora export fix (DTensor->cpu) + merge_adapter.py for served checkpoint
+22f40cd4134eb83b901b65dde229cf8ec59972f1	2026-10-04T08:40:54+08:00	exp: real-SWE pilot topup -- 11066/11206 to 5 eps/harness; H_D 7/16=44% vs H_A 2/16=12%
+14c2b34e6cbe5dc357af6817c1072ddc878665be	2026-10-04T08:17:37+08:00	exp: real SWE-bench Verified pilot -- containerless verifier pipeline; H_D > H_A on 5 gated django instances (10% vs 30%)
+ade6250c48aaf2bed01c2c211fe8053e9953ccf5	2026-10-03T23:02:33+08:00	exp: cross-model replication completes on space-bunny-alpha; H_D > H_A on both tiers
+9c74484868a99ca292a7484365f3f3982246d8a0	2026-10-03T11:32:45+08:00	exp: cross-model replication -- glm-5.2 runs tier3 near ceiling, so the harness effect has no headroom to show in
+3c6bfb48b52be2dd85380531db7b74782ad22c7f	2026-10-03T09:53:11+08:00	exp: Phase 3.6 behavior profile -- H_D's tier3 gain is the verify turn and nothing else
+68aa65ef768921703aee1a3598fa6487a4698a75	2026-10-03T08:33:10+08:00	exp: Phase 4C -- parquet exporter and the three SFT configs
+d851ef17a9dca69d2c5d73878dcbbc6fe041dabd	2026-10-03T08:28:16+08:00	exp: Phase 4B -- three contamination-free views, three new gates
+02375ed18499f89148f5cb0c229bfdffe6cd56a0	2026-10-02T22:00:12+08:00	exp: Phase 4 training data, built under the canonical-branch gate
+1f89fc05b038d38586dfa243bfb8da290433c4bd	2026-10-02T21:58:03+08:00	fix: WSL glob silently drops matches on Path.glob
+7f2bd35365b535e6460e598284ab27aeabbf1034	2026-10-02T21:52:32+08:00	exp: protocol-invariant SFT eval config for Phase 4
+52c909d00f3e5c7ab5c53772e23d46cd22f2b573	2026-10-02T21:51:43+08:00	fix: training_view branch gate is now a real check, not a misread signal
+641de9f9d3edc83b05dc88a0f42f421e21249643	2026-10-02T21:21:08+08:00	exp: training-view gate -- the canonical branch, not all nodes
+1416ba43f308a3fe8918649de7f2bced5e2034df	2026-10-02T21:12:22+08:00	exp: H_F attribution -- the phase prompts carry most of the tier3 gain; gating helps tier4 only
+57ea32e55b7913f7a64a1d11f82e8eaadeb51df9	2026-10-02T20:49:17+08:00	exp: Harness F -- the attribution control (phase gating without the structured prompts)
+7cdbc5980ed68c048b769e2302fd5a6d9d81f65a	2026-10-02T20:35:45+08:00	exp: retire the 'planner' framing -- the validated intervention is staged action allocation
+800944bbba1665bb3a59df1b67cd4dd8a0b13373	2026-10-02T19:46:34+08:00	exp: H_E ablation decomposes the tier3 gain -- neither ingredient dominates
+76d91806e0a52975c8c818836bf658af1b387f9e	2026-10-02T19:29:30+08:00	exp: Harness E -- the ablation of Harness D, allocation driven by SWE_LAB_PHASES
+bea062e8fa08cd46c9e0a2324290b3a8078049c0	2026-10-02T18:49:03+08:00	chore: make the Harness D files lint-clean
+e5427c7448af53a0195ce0935dce376bbbec5035	2026-10-02T18:46:55+08:00	exp: Harness D buys tier3, and only there clearly -- 3 runs vs 3 at the same cap
+08e6b1a1dd17d11465760aabbbe76a25e9cc1bae	2026-10-02T18:20:21+08:00	exp: Harness D -- plan/execute/feedback as a runtime program, and the two rules it needed
+b6c1ad9a8c5d02fc008191201287371fed2a6831	2026-10-02T18:09:23+08:00	exp: name the completion-bound config for the harness it configures (H_C)
+462d6a866a8a9221e523b9eed230674cd759eef4	2026-10-02T18:05:57+08:00	exp: record the budget frontier and the tier 4/5 ladder audits
+6004a7559bea4d6ab2f236107ac94bb145f34287	2026-10-02T16:33:02+08:00	exp: a binding turn budget creates the headroom Harness A lacked (and a bug hid it)
+a56e6ae135f08d66e6806f1bdd6b00b66b6c667a	2026-10-02T16:23:57+08:00	exp: Tier 5 does NOT de-saturate Harness A -- negative result on the difficulty axis
+649d5ab2102346258b5f5db2d64617d3087b5cdb	2026-10-02T11:56:43+08:00	exp: Phase 4 data layer -- trajectory to training view, with the transformation recorded
+d732e5ffdc602a0d613e52e2643fff03f5c232dd	2026-10-02T11:21:18+08:00	exp: harness A/B/C at 3 runs each -- tool support is the effect; difficulty is task x harness
+6a1177c45ccf29edd4b5f7b6e2fa05f3ba0142e2	2026-10-02T10:29:35+08:00	exp: RETRACT the Harness C claim -- at n=32 the effect reverses
+af3bddf12a6fe06b0e91e69c15d9db80cf0c4efe	2026-10-02T10:14:12+08:00	exp: Harness C -- bounding the completion condition cuts no-write and lifts solve
+ee1466a8c8bf9fbc4504e13572401be976d92015	2026-10-02T10:07:22+08:00	exp: make "ended without writing" a first-class outcome in the frontier report
+7344961326b0c4b816a1f634efceb13faea79129	2026-10-02T09:53:18+08:00	exp: Phase 3.6 trajectory mining -- failures never attempt a change at all
+d43b15861ba2e9dbe045b3af637ea2de8fd4c0c2	2026-10-02T09:50:09+08:00	exp: first harness A/B -- removing one tool costs 44 points of solve rate
+997935c9b9b96c59bbf997557e4b441f9c7a7db3	2026-10-02T09:42:17+08:00	exp: run the four-tier ladder in patch mode; tool calls resolve where solve rate does not
+2755ba56fcfe9c7e6be6f8b8976f7789b2136e20	2026-10-02T09:38:19+08:00	exp: Tier 4 -- hidden configuration layer, and what the audit caught in it
+5d00b430e014abd4976e99b2bec1f5abc3abb694	2026-10-02T09:21:14+08:00	exp: patch-mode reporting -- recorded verdicts and real tool-call extraction
+517bb282609f8207d84aa6689b6f2ce3d4b1f3d8	2026-10-02T09:13:06+08:00	exp: add patch-mode taskset so harness comparisons can mean something
+b43c3f1d42fca8d7da50c8dd3bea829905b6987d	2026-10-01T21:28:40+08:00	exp: repeat runs expose endpoint contention; pooled rates not yet trustworthy
+5ef3bf8ee78d0306fc59abadcc7b6931c38f0ec2	2026-10-01T21:08:37+08:00	exp: fix the endpoint error rate; the "tier3 cliff" was partly an artifact
+9142c26320209d39d7e892f8cc44b07640d210c3	2026-10-01T21:03:10+08:00	exp: solve-rate curve over 8 attempts per tier, errored episodes excluded
+1746c6c05e62b9253419120fface308b2474bf06	2026-10-01T20:55:55+08:00	exp: Phase 3 capability frontier across the three swe-lab tiers
+98785493eeaac4d5a062364900737454dacbc988	2026-10-01T20:50:19+08:00	exp: replay a live non-zero trace; read full traces from the run directory
+57e81c8af486089df4b7b579fe139e1aa0e03175	2026-10-01T20:22:11+08:00	exp: Phase 2 difficulty ladder with per-tier budgets and audits
+56a6c91d11df1dd7465c6e8e19d52f3d12e92cfc	2026-10-01T20:19:56+08:00	exp: executing-reward replay over a saved trace (Phase 1B acceptance)
+238881b109c72afdc36f964b0b59074bb1ec1ff4	2026-10-01T20:16:40+08:00	exp: derive the experiment record from the verifiers episode index
+b2698922ca69d758179fa2810349bab0d8928477	2026-10-01T20:14:23+08:00	exp: Phase 1B proper -- real verifiers Episode with the audited verifier as reward
+feb213c32f74b7f27add87703e562a7ec51280b9	2026-10-01T19:37:04+08:00	exp: Phase 1B runtime-level deterministic episode (Route G)
+498fca52926e811ca5c75616a6776a29fdb77af0	2026-10-01T15:05:24+08:00	exp: Phase 1A environment contract + Golden Episode (closure before live run)
+17d30dbcb4ea30a3a0080d5727ec62e27d9ce330	2026-10-01T15:03:39+08:00	exp: revise SWE plan to spec level (verifiers v1 alignment, golden episode, replay)
+6cb65ffcea4062455b4b9337868ad8b8b81d0d6d	2026-10-01T14:59:05+08:00	exp: SWE harness plan and roadmap
+86e9e83667509aab1c5b165ad14d5daf975eec36	2026-10-01T11:29:38+08:00	exp: SWE feedback-terrain lab -- define and audit a code-repair reward

@@ -1,0 +1,177 @@
+run	attempts	n	model	max_turns	timeout	harness	gate	banner	role	budget	phases	files	metrics_sha	pass1	reward	resolve	completed	error	stop_maxturns	first_dt
+base-eval	1					CFGERR						9	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+base-eval-smoke	1					CFGERR						9	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+base-eval-v2	1					CFGERR						12	6e357c89e2b8fae5	None	None	None	None	None		2026-09-28
+base-vs-sft	0											25								2026-09-28
+compact-sft-heldout	0											1								2026-09-28
+compact-sft-train	0											2								2026-09-28
+heldout-willcb	0											2								2026-09-28
+m2-budget-r1	1					CFGERR						14	01f90e99011eabef	None	None	None	None	None		2026-10-03
+m2-budget-r2	1					CFGERR						14	a681ffeee3802b10	None	None	None	None	None		2026-10-03
+m2-budget-r3	1					CFGERR						12	786f718dd4234f9a	None	None	None	None	None		2026-10-03
+m2-hd-r1	1					CFGERR						14	b4984a427f02b955	None	None	None	None	None		2026-10-03
+m2-hd-r2	1					CFGERR						14	e734b37bd11e3479	None	None	None	None	None		2026-10-03
+m2-hd-r3	1					CFGERR						12	cef16015c8b305ed	None	None	None	None	None		2026-10-03
+pi-base	1					CFGERR						14	78767b9e42229b1f	0.0	0.0	0.0	1.0	None		2026-10-04
+pi-real-D	1					CFGERR						14	7795352eb3e02775	0.0	0.0	0.0	1.0	None		2026-10-04
+pi-real-D-lora	1											10	e3e3dd757093f071	None	None	None	None	None		2026-10-04
+reverse_text_local	0											1								2026-09-28
+rl-2x2-hA	1					CFGERR						14	0d2a905bd478ee76	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-2x2-hD	1					CFGERR						14	9c131d8c421d4cb3	0.05	0.05	0.05	1.0	None		2026-10-05
+rl-2x2-hD2	1					CFGERR						14	300c779964fb2b03	0.05263157894736842	0.05263157894736842	0.05263157894736842	1.0	None		2026-10-05
+rl-2x2-hG	1					CFGERR						14	5b7558ef428c0e49	0.05263157894736842	0.05263157894736842	0.05263157894736842	1.0	None		2026-10-05
+rl-2x2-hG2	1					CFGERR						14	426cf7b20946bba0	0.05263157894736842	0.05263157894736842	0.05263157894736842	1.0	None		2026-10-05
+rl-2x2-hP	1					CFGERR						14	86032dfdf079b6ec	0.10526315789473684	0.10526315789473684	0.10526315789473684	1.0	None		2026-10-05
+rl-2x2-hP2	1					CFGERR						14	3ecf34e456670509	0.05	0.05	0.05	1.0	None		2026-10-05
+rl-6c-bunny-hA-T6	1					CFGERR						14	362a492fd28280db	0.1	0.1	0.1	1.0	None		2026-10-05
+rl-6c-bunny-hAdapt-T6	1					CFGERR						13	ab2bc5419e596619	None	None	None	None	None		2026-10-05
+rl-6c-bunny-hD-T6	1					CFGERR						12	14090b203c4f2241	None	None	None	None	None		2026-10-05
+rl-6c-hA-T2	1					CFGERR						14	e6fa142bbfb50690	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-6c-hA-T6	1					CFGERR						14	a5f3d43af4e82720	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-6c-hA-T8	1					CFGERR						14	e4e62d159a2b7055	0.15789473684210525	0.15789473684210525	0.15789473684210525	1.0	None		2026-10-05
+rl-6c-hAdapt-T2	1					CFGERR						14	80b21adc059da191	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-6c-hAdapt-T6	1					CFGERR						14	445c6e364d0fa66d	0.05	0.05	0.05	1.0	None		2026-10-05
+rl-6c-hAdapt-T8	1					CFGERR						14	001f3b701264244d	0.15789473684210525	0.15789473684210525	0.15789473684210525	1.0	None		2026-10-05
+rl-6c-hD-T2	1					CFGERR						14	0224557f65c58f4d	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-6c-hD-T6	1					CFGERR						14	ecc18adf2530b61b	0.29411764705882354	0.29411764705882354	0.29411764705882354	1.0	None		2026-10-05
+rl-6c-hD-T8	1					CFGERR						14	a24777e8cf389c15	0.10526315789473684	0.10526315789473684	0.10526315789473684	1.0	None		2026-10-05
+rl-6c-hG-T6	1					CFGERR						14	289587ee77cc583e	0.05555555555555555	0.05555555555555555	0.05555555555555555	1.0	None		2026-10-05
+rl-6c-hP-T6	1					CFGERR						14	1f5a6148fd075539	0.25	0.25	0.25	1.0	None		2026-10-05
+rl-7-hAction	1					CFGERR						14	8df841f4baba4df6	0.15	0.15	0.15	1.0	None		2026-10-05
+rl-7-hNeutral	1					CFGERR						14	5975098928c4f037	0.05	0.05	0.05	1.0	None		2026-10-05
+rl-7-hOnce	1					CFGERR						14	1d2ae4400440b5a5	0.05	0.05	0.05	1.0	None		2026-10-05
+rl-7-hPhase	1					CFGERR						14	38f6b94aa34747ba	0.16666666666666666	0.16666666666666666	0.16666666666666666	1.0	None		2026-10-05
+rl-7-hSys	1					CFGERR						14	219b9343e9fdf51c	0.15	0.15	0.15	1.0	None		2026-10-05
+rl-8-hReplay	1					CFGERR						14	2a37a83997ed0506	0.15789473684210525	0.15789473684210525	0.15789473684210525	1.0	None		2026-10-05
+rl-8c-hA-s1	1					CFGERR						14	9c6b3570ca818469	0.10526315789473684	0.10526315789473684	0.10526315789473684	1.0	None		2026-10-05
+rl-8c-hA-s2	1					CFGERR						14	444c21f80e6244bb	0.10526315789473684	0.10526315789473684	0.10526315789473684	1.0	None		2026-10-05
+rl-8c-hOnce-s1	1					CFGERR						14	ce3e45caee8a7726	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-8c-hOnce-s2	1					CFGERR						14	b37c4e4d93096f6f	0.058823529411764705	0.058823529411764705	0.058823529411764705	1.0	None		2026-10-05
+rl-8c-hP-s1	1					CFGERR						14	94eb22008b3017da	0.0	0.0	0.0	1.0	None		2026-10-06
+rl-8c-hP-s2	1					CFGERR						14	60e4f13af1ea30f8	0.15	0.15	0.15	1.0	None		2026-10-06
+rl-8c-hReplay-s1	1					CFGERR						14	12a807488cc7d56d	0.21052631578947367	0.21052631578947367	0.21052631578947367	1.0	None		2026-10-06
+rl-8c-hReplay-s2	1					CFGERR						14	8783bcd2ab5df9da	0.15	0.15	0.15	1.0	None		2026-10-06
+rl-adapt	1					CFGERR						14	eb3d68aef3d5e75c	0.0	0.0	0.0	1.0	None		2026-10-05
+rl-hA	1					CFGERR						14	d8962daf326a4e8d	0.1	0.1	0.1	1.0	None		2026-10-04
+rl-hA-T2	1					CFGERR						14	84a019bbbc8c5e33	0.0	0.0	0.0	1.0	None		2026-10-04
+rl-hA-T2-topup	1					CFGERR						14	13efd20cd0183ff0	0.0	0.0	0.0	1.0	None		2026-10-04
+rl-hA-T6	1					CFGERR						14	58b00902f34b312b	0.3	0.3	0.3	1.0	None		2026-10-04
+rl-hA-T6-topup	1					CFGERR						14	890aaa7d0d11367d	0.33333333333333337	0.3333333333333333	0.3333333333333333	1.0	None		2026-10-04
+rl-hA-T8	1					CFGERR						14	618da429654a8db4	0.3	0.3	0.3	1.0	None		2026-10-04
+rl-hA-T8-topup	1					CFGERR						14	5a3227728652fc2a	0.8333333333333334	0.8333333333333334	0.8333333333333334	1.0	None		2026-10-04
+rl-hA-topup	1					CFGERR						14	7c6849605d611114	0.16666666666666669	0.16666666666666666	0.16666666666666666	1.0	None		2026-10-04
+rl-hAp	1					CFGERR						14	a58b171d450b10b0	0.0	0.0	0.0	1.0	None		2026-10-04
+rl-hAp-topup	1					CFGERR						14	8c1e3a47352bdd5d	0.16666666666666669	0.16666666666666666	0.16666666666666666	1.0	None		2026-10-04
+rl-hD	1					CFGERR						14	f1f4445eb212a9bb	0.3	0.3	0.3	1.0	None		2026-10-04
+rl-hD-T2	1					CFGERR						14	88cc93689963a170	0.0	0.0	0.0	1.0	None		2026-10-04
+rl-hD-T2-topup	1					CFGERR						14	fdadb28cfd0deed3	0.16666666666666669	0.16666666666666666	0.16666666666666666	1.0	None		2026-10-04
+rl-hD-T6	1					CFGERR						14	143078c9bc26b035	0.3	0.3	0.3	1.0	None		2026-10-04
+rl-hD-T6-topup	1					CFGERR						14	9ca0847e3f28e79f	0.8333333333333334	0.8333333333333334	0.8333333333333334	1.0	None		2026-10-04
+rl-hD-T8	1					CFGERR						14	97f34af38ef24742	0.2	0.2	0.2	1.0	None		2026-10-04
+rl-hD-T8-topup	1					CFGERR						14	5f0d6486843509d4	0.8333333333333334	0.8333333333333334	0.8333333333333334	1.0	None		2026-10-04
+rl-hD-topup	1					CFGERR						14	20b0d6c02039c1e4	0.6666666666666667	0.6666666666666666	0.6666666666666666	1.0	None		2026-10-04
+rl-hP-pilot	1					CFGERR						14	eb381d41a0dc6ef6	0.3	0.3	0.3	1.0	None		2026-10-05
+rl-hP-pilot-topup	1					CFGERR						14	c0b4a6b5d946ea68	0.6666666666666667	0.6666666666666666	0.6666666666666666	1.0	None		2026-10-05
+rl-sb-hA	1					CFGERR						14	43a90d134f33d810	0.2	0.2222222222222222	0.2222222222222222	1.0	None		2026-10-04
+rl-sb-hA-topup	1					CFGERR						14	e18f5c1efe6d4bc2	0.16666666666666669	0.16666666666666666	0.16666666666666666	1.0	None		2026-10-04
+rl-sb-hD	1					CFGERR						14	f3995b69fd96e71e	0.4	0.375	0.375	1.0	None		2026-10-04
+rl-sb-hD-topup	1					CFGERR						14	bb33755760a5a559	0.5	0.6666666666666666	0.6666666666666666	1.0	None		2026-10-04
+rl-smoke	1					CFGERR						14	4bb50faa034fd019	0.0	0.0	0.0	1.0	None		2026-10-04
+rl-wide-hA	1					CFGERR						14	e0859bbfdc5c4bb4	0.0	0.0	0.0	1.0	None		2026-10-04
+rl-wide-hD	1					CFGERR						15	b347d55135393fa6	0.1	0.10526315789473684	0.10526315789473684	1.0	None		2026-10-05
+sft	2											30	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+sft-attempt3	1											7	e3b0c44298fc1c14	None	None	None	None	None		2026-09-27
+sft-attempt4	1											7	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+sft-compact	1											7	a615cf4102e94109	None	None	None	None	None		2026-09-28
+sft-compact2	1											12	4c9a4ec143077fdc	None	None	None	None	None		2026-09-28
+sft-lora	1											12	de995123093c8464	None	None	None	None	None		2026-09-28
+sft-mini	1											7	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+sft-mini2	1											10	fdec142f13e1d364	None	None	None	None	None		2026-09-28
+sft-offload	1											7	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+sft-small	1											7	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+sft-smalllb	1											7	e3b0c44298fc1c14	None	None	None	None	None		2026-09-28
+short-overfit-train	0											1								2026-09-28
+short-ovf	1											12	b3365690b5f1c32c	None	None	None	None	None		2026-09-28
+short-ovf-eval	0											16								2026-09-28
+short-ovf-holdout	0											1								2026-09-28
+short-ovf-train	0											1								2026-09-28
+smoke-adapt	1					CFGERR						14	d0649355b7d94ab9	0.0	0.0	0.0	1.0	None		2026-10-05
+smoke-adapt-t8	1					CFGERR						14	2c50cad8c0cfee15	1.0	1.0	1.0	1.0	None		2026-10-05
+smoke-hG	1					CFGERR						14	b787553b1ba8c461	0.0	0.0	0.0	1.0	None		2026-10-05
+smoke-hP	1					CFGERR						14	a401b030b8f149c2	1.0	1.0	1.0	1.0	None		2026-10-05
+smoke-sympy	1					CFGERR						14	92cbd8a913543723	0.0	0.0	0.0	1.0	None		2026-10-04
+smoke7-hNeutral	1					CFGERR						14	609adac88f1c8cf8	0.0	0.0	0.0	1.0	None		2026-10-05
+smoke7-hOnce	1					CFGERR						14	3356bf8a34543c00	1.0	1.0	1.0	1.0	None		2026-10-05
+smoke7-hSys	1					CFGERR						14	5c0f43eda9f507e4	1.0	1.0	1.0	1.0	None		2026-10-05
+smoke8-bunny-hP	1					CFGERR						11	3e9a1786fe840a91	None	None	None	None	None		2026-10-05
+smoke8-deeps-hP	1					CFGERR						11	f5e57aaa318c8a5a	None	None	None	None	None		2026-10-05
+smoke8b-bunny	1					CFGERR						11	9ec418fd2ab55b47	None	None	None	None	None		2026-10-05
+smoke9-dots3-ctrl	1					CFGERR						14	5d2039e5b940b9b9	1.0	1.0	1.0	1.0	None		2026-10-05
+smoke_bunny_subagent	1					CFGERR						14	ef15fbc5a8e5ac1d	1.0	1.0	1.0	1.0	None		2026-10-05
+swe-lab--deepseek-v4-flash--23a49121	1					CFGERR						14	12e4c08175cbcb05	None	None	None	None	None		2026-10-01
+swe-lab--deepseek-v4-flash--753e34fe	1					CFGERR						14	c52718a37b0c1cab	None	None	None	None	None		2026-10-01
+swe-lab--deepseek-v4-flash--b302da92	1					CFGERR						14	e96b74764f4ad052	None	None	None	None	None		2026-10-01
+swe-lab--deepseek-v4-flash--f13d0d3d	1					CFGERR						14	6589a5ddcf2d5ab9	None	None	None	None	None		2026-10-01
+swe-lab--dots3-note-prev--12ebe5a6	1					CFGERR						5								2026-10-02
+swe-lab--primeintellect--qwen3-0.6b--null--73f8f523	0											3								2026-10-01
+swe-lab--primeintellect--qwen3-0.6b--null--80294499	0											1								2026-10-01
+swe-lab--qwen3-0.6b--2a126853	1					CFGERR						14	823e9c3dfa6ea588	None	None	None	None	None		2026-10-01
+swe-lab-abc-A1	1					CFGERR						14	38f2bc7c7219575b	None	None	None	None	None		2026-10-02
+swe-lab-abc-A2	1					CFGERR						14	6ac2468a9b6c48a7	None	None	None	None	None		2026-10-02
+swe-lab-abc-A3	1					CFGERR						14	1ec83a4ca9cba448	None	None	None	None	None		2026-10-02
+swe-lab-abc-B1	1					CFGERR						14	4ab40950370c2567	None	None	None	None	None		2026-10-02
+swe-lab-abc-B2	1					CFGERR						14	75929ebe0020cfd4	None	None	None	None	None		2026-10-02
+swe-lab-abc-B3	1					CFGERR						14	31c83689fb8d4893	None	None	None	None	None		2026-10-02
+swe-lab-abc-C1	1					CFGERR						14	07dd682d37f905b5	None	None	None	None	None		2026-10-02
+swe-lab-abc-C2	1					CFGERR						14	00d42f420ad3fe2b	None	None	None	None	None		2026-10-02
+swe-lab-abc-C3	1					CFGERR						14	362be3d759f8362a	None	None	None	None	None		2026-10-02
+swe-lab-budget-hA	1					CFGERR						14	9bce8a476b372078	None	None	None	None	None		2026-10-02
+swe-lab-budget-hA2	1					CFGERR						14	af351f71845d5b9d	None	None	None	None	None		2026-10-02
+swe-lab-budget-hA3	1					CFGERR						14	80226ce541da0970	None	None	None	None	None		2026-10-02
+swe-lab-budget-hD1	1					CFGERR						14	6fb484386032cc0b	None	None	None	None	None		2026-10-02
+swe-lab-budget-hD2	1					CFGERR						12	5ce1af3dd2b34345	None	None	None	None	None		2026-10-02
+swe-lab-budget-hD3	1					CFGERR						14	7c07203627f00d4d	None	None	None	None	None		2026-10-02
+swe-lab-budget-hD4	1					CFGERR						14	130bee7dbbefdd2e	None	None	None	None	None		2026-10-02
+swe-lab-budget-hE1	1					CFGERR						14	983b051ac92341c1	None	None	None	None	None		2026-10-02
+swe-lab-budget-hE2	1					CFGERR						14	f66eb6dfe940b2b7	None	None	None	None	None		2026-10-02
+swe-lab-budget-hE3	1					CFGERR						14	60c98ed9314c4a9d	None	None	None	None	None		2026-10-02
+swe-lab-budget-hF1	1					CFGERR						14	5c8d621c44f02a4f	None	None	None	None	None		2026-10-02
+swe-lab-budget-hF2	1					CFGERR						14	3741ad27c9918b50	None	None	None	None	None		2026-10-02
+swe-lab-budget-hF3	1					CFGERR						14	f2fa799670487cca	None	None	None	None	None		2026-10-02
+swe-lab-bunny1	1					CFGERR						14	afd7f0eae3742d24	None	None	None	None	None		2026-10-01
+swe-lab-bunny2	1					CFGERR						14	c9bf1cd25180851b	None	None	None	None	None		2026-10-01
+swe-lab-bunny3	1					CFGERR						14	2362da811f1fa28b	None	None	None	None	None		2026-10-01
+swe-lab-bunny4	1					CFGERR						14	8cc8b7c2c971b65a	None	None	None	None	None		2026-10-01
+swe-lab-bunny5	1					CFGERR						14	903a10020ef7f50a	None	None	None	None	None		2026-10-01
+swe-lab-ded1	1					CFGERR						14	e6e9f6bf066e1419	None	None	None	None	None		2026-10-01
+swe-lab-ded2	1					CFGERR						14	4a0003d3d7d4fa7f	None	None	None	None	None		2026-10-01
+swe-lab-ded3	1					CFGERR						14	f60e25ca186f00a6	None	None	None	None	None		2026-10-01
+swe-lab-ded4	1					CFGERR						14	21f4bcbe4ed5e03d	None	None	None	None	None		2026-10-01
+swe-lab-ded5	1					CFGERR						14	84f826160ae61705	None	None	None	None	None		2026-10-01
+swe-lab-dots1	1					CFGERR						14	80731ad86290c731	None	None	None	None	None		2026-10-01
+swe-lab-dots2	1					CFGERR						14	dff0e24fd2deb29c	None	None	None	None	None		2026-10-01
+swe-lab-dots3	1					CFGERR						14	f19968d1dace66de	None	None	None	None	None		2026-10-01
+swe-lab-dots4	1					CFGERR						14	c67b35f7d7560391	None	None	None	None	None		2026-10-01
+swe-lab-dots5	1					CFGERR						14	91f1fa2dead36c78	None	None	None	None	None		2026-10-01
+swe-lab-free1	1					CFGERR						14	2c78b238ed19ea82	None	None	None	None	None		2026-10-01
+swe-lab-free2	1					CFGERR						14	a7f2d55157a575cc	None	None	None	None	None		2026-10-01
+swe-lab-free3	1					CFGERR						14	e06c69c75eb2bbe9	None	None	None	None	None		2026-10-01
+swe-lab-free4	1					CFGERR						14	f43d710d8c9e88c8	None	None	None	None	None		2026-10-01
+swe-lab-free5	1					CFGERR						14	ebc4085cd1e0a4a8	None	None	None	None	None		2026-10-01
+swe-lab-hB-n8	1					CFGERR						14	eb35e1cefca0afcc	None	None	None	None	None		2026-10-02
+swe-lab-hC-n8	1					CFGERR						14	d232a41b6bbc25f6	None	None	None	None	None		2026-10-02
+swe-lab-hE-smoke	1					CFGERR						14	f9c84caeb837dddc	None	None	None	None	None		2026-10-02
+swe-lab-hF-smoke	1					CFGERR						14	e9d1ee72de1a466f	None	None	None	None	None		2026-10-02
+swe-lab-harnessA	1					CFGERR						14	3fe5bc3a828d4763	None	None	None	None	None		2026-10-02
+swe-lab-harnessB-noedit	1					CFGERR						14	9e37fd15c034bac7	None	None	None	None	None		2026-10-02
+swe-lab-harnessC-patchfirst	1					CFGERR						14	22fdaf0c2925d09d	None	None	None	None	None		2026-10-02
+swe-lab-hd-smoke	1					CFGERR						14	bd13cea153fcf149	None	None	None	None	None		2026-10-02
+swe-lab-hd-smoke2	1					CFGERR						14	de438b17798b1d80	None	None	None	None	None		2026-10-02
+swe-lab-rep1	1					CFGERR						14	94728f2f9ff7500b	None	None	None	None	None		2026-10-01
+swe-lab-rep2	1					CFGERR						14	20a43ac7c18bc9ac	None	None	None	None	None		2026-10-01
+swe-lab-rep3	1					CFGERR						14	83a57e8d826ba4c4	None	None	None	None	None		2026-10-01
+swe-lab-rep4	1					CFGERR						14	14cecb534fd8c929	None	None	None	None	None		2026-10-01
+swe-lab-rep5	1					CFGERR						12	fa2fe0bf61f2f430	None	None	None	None	None		2026-10-01
+swe-lab-tier4-dots	1					CFGERR						14	b0a36f6c44b687e6	None	None	None	None	None		2026-10-02
+swe-lab-tier5-hA	1					CFGERR						14	c45792f6fc8c6c0f	None	None	None	None	None		2026-10-02
+swe_runs	0											54								2026-10-04

@@ -10,7 +10,7 @@ per-completion control-plane text varies:
   budget          max_turns = 6
   tools           bash + edit available in every turn (SWE_LAB_GATE=0)
   allocation      "1,2," (plan 1 call, execute 2, feedback to budget)
-  system prompt   identical across all six arms
+  system prompt   identical across all seven arms
 
 The intervention is the text the planner injects as a user-role message before
 each model completion. `SWE_LAB_BANNER` selects the mode
@@ -26,6 +26,7 @@ stays reproducible.
 | H_ACTION    | `Phase: X. Goal: <action>.`          | every turn               |
 | H_P         | full phase text (PLAN / EXECUTE / FEEDBACK) | phase boundary (recorded reference) |
 | H_PHASE     | full phase text                      | every turn               |
+| H_SYS       | full phase text (as H_P)             | phase start, system role |
 
 Injections are counted straight out of the traces, not assumed from the config.
 Verifiers re-roots a branch whenever the advertised tool set changes and
@@ -43,6 +44,7 @@ in the smoke, one re-rooting artefact.
 | H_ACTION  | 15%   |  20%  |  80%     | every turn     | 5.95          |  0.04     |  5.8    |  5.0            |  1.15        |
 | H_P       | 25%   |  35%  |  65%     | phase start    | 3.0           |  0.11     |  5.7    |  3.5            |  1.40        |
 | H_PHASE   | 15%   |  25%  |  75%     | every turn     | 5.7           |  0.08     |  5.7    |  5.0            |  1.25        |
+| H_SYS     | 15%   |  25%  |  75%     | phase start    | 3.0           |  0.09     |  5.8    |  4.5            |  1.30        |
 
 inj/ep (raw) is the number of banner messages the conversation actually carried,
 counted from the traces (re-rooting duplicates included -- the model reads them
@@ -62,8 +64,8 @@ as unsolved, so H_PHASE's 15% is a floor; if either had solved the
 20 clean rollouts. `edit_after_failed_test` is 0.00 in every arm, so no arm
 here does test-driven repair -- the Phase 5/6 finding holds.
 
-H_SYS (identical text and cadence as H_P, banner injected as a system message)
-is still running and is not in this table.
+All seven arms are 20 rollouts. H_SYS is clean: 19 ended at max_turns and 1 at
+agent_completed, no HarnessError.
 
 ## The three factors, separated
 
@@ -91,9 +93,31 @@ ordering is consistent across solve, edit% (5 -> 20 -> 25) and state_chg
 **Cadence matters on top of content.** H_PHASE carries the same full phase text
 as H_P but injects it every turn (5.7 per episode) instead of at the phase
 starts (3.0), and drops from 25% to 15% solve, 35% to 25% edit, 0.11 to 0.08
-state_chg. The phase-boundary spacing is worth the difference. Directional at
-this n (5 vs 3 solves), but it is the only comparison in the run that holds
-content exactly constant while varying only when the text arrives.
+state_chg. The phase-start spacing is worth the difference. Directional at this
+n (5 vs 3 solves).
+
+**The message role is load-bearing.** H_SYS carries the identical H_P text at
+the identical phase-start cadence -- 3.0 injections per episode in both, so no
+cadence or re-rooting difference -- but injects it as a system message instead
+of a user message. It drops from 25% to 15% solve, 35% to 25% edit, 0.11 to
+0.09 state_chg, and its inspect_run_max worsens from 3.5 to 4.5. Directional at
+this n (5 vs 3 solves), and the trajectory metrics point the same way as the
+solve rate rather than scattering around it. The user-role interruption that
+lands at the decision point is part of what does the work; the same words
+arriving as a system message do not carry it.
+
+H_SYS and H_PHASE are the two clean single-factor comparisons in the run, and
+they agree: each one drops 25% -> 15% and costs the same ~10 points, one for
+moving the banner to the system role and one for moving it to every turn.
+H_ACTION is a two-factor arm (stripped content *and* every-turn cadence) that
+also lands at 15%, consistent with either factor or both. H_A (no banner) is
+0%, H_ONCE (content and role right, cadence at one) is 5%, H_NEUTRAL (role and
+cadence right, content inert) is 5%.
+
+Repetition is the one factor whose step is larger than the others: going from
+one injection to the phase-start cadence is 5% -> 25%, a 20-point step.
+Repetition is the necessary condition; role, cadence and content are the
+sufficient ones.
 
 So the dose-response over injection frequency at full phase content is 1 -> 5%,
 3 (phase starts) -> 25%, 5.7 (every turn) -> 15%. Non-monotone, with the peak
@@ -143,9 +167,16 @@ frequency on top of content costs a little.
 
 Phase 5 framed the result as "the per-turn banner, not the tool affordance, is
 the mechanism." Phase 6 confirmed it (H_P == H_D at T=6; the silent tool-list
-change does nothing). Phase 7 sharpens it, and overturns one part:
+change does nothing). Phase 7 sharpens it from one claim into four, and
+replaces the framing's "repeated injection" with three load-bearing dimensions:
 
-> Harness 的作用不是"每轮重复注入上下文"，而是"在决策边界处广播控制平面状态"。
+> Harness 的作用不是"每轮重复注入上下文"，而是"在决策边界处，以用户消息中断的形式，
+> 广播控制平面的当前阶段状态"。
+
+The three dimensions -- content, cadence and message role -- each drop the
+effect from 25% to 15% when misspecified, and repetition is the necessary
+condition underneath them all: one announcement of the right content and role
+still yields the baseline.
 
 The announcement has a marginal cost as well as a marginal benefit. The benefit
 is one redirected turn: the injected text re-aligns the agent's next action to
@@ -187,31 +218,42 @@ announcement does not add -- it may even pull the agent back to re-reading the
 phase instead of acting in it. What H_P does is announce the phase at the moment
 the agent is choosing what the phase is for, and then leave it alone.
 
-What remains open is whether the message role is load-bearing at all. H_SYS
-injects the identical H_P text at the identical phase-boundary cadence as a
-system message rather than a user message; it is still running.
+The role result strengthens the control-plane reading rather than merely adding
+a fourth factor. A control plane whose announcements must arrive as user-role
+interruptions at the phase boundaries is a more specific claim than one whose
+announcements may sit anywhere in the message history: the runtime has to
+*interrupt* the model to steer it, not just tell it. A system-message banner is
+part of the model's standing instructions and is apparently already attended to
+before the decision point arrives; a user-message banner lands on the turn that
+needs steering. That distinction was the point of the control-plane framing in
+Phase 5 and 6 and it is what Phase 7 confirms.
 
 ## Discipline note
 
 No further H_D / H_G / H_ADAPT variants. Phase 6 established that the tool
 affordance contributes nothing here (H_G, H_ADAPT floor; H_P == H_D), and Phase
-7 shows that the announcement cadence, not the enforcement, is the operative
-variable. Those arms have served their purpose; additional variants would only
-re-measure the same null.
+7 shows that the operative variables are the announcement's content, cadence and
+message role -- not the enforcement that the earlier arms were built around.
+Those arms have served their purpose; additional variants would only re-measure
+the same null.
 
 Two items remain open.
 
-Both levers are real but neither step is statistically established at n=20. The
-content step (neutral 5% -> action/full 15%, every-turn) is 1 vs 3 solves; the
-cadence step (every-turn full 15% -> phase-start full 25%) is 3 vs 5 solves. The
-ordering is consistent across solve, edit%, state_chg and inspect_run_max in
-both cases, so the directions hold, but a larger n on H_NEUTRAL / H_ACTION /
-H_PHASE / H_P would tighten the gaps -- no new arm is needed.
+Neither factor step is statistically established at n=20. The content step
+(neutral 5% -> action/full 15%, every-turn) is 1 vs 3 solves; the cadence step
+(every-turn full 15% -> phase-start full 25%) is 3 vs 5 solves; the role step is
+3 vs 5 solves. The ordering is consistent across solve, edit%, state_chg and
+inspect_run_max in each case, so the directions hold, but a larger n on
+H_NEUTRAL / H_ACTION / H_PHASE / H_P / H_SYS would tighten the gaps -- no new
+arm is needed.
 
-The message role. H_SYS injects the identical H_P text at the identical
-phase-start cadence as a system message rather than a user message. If H_SYS
-matches H_P, the role is irrelevant and the mechanism is content-and-cadence
-full stop. If it drops, the user-role interruption that lands at the decision
-point is part of what does the work -- which would be a stronger result than
-anything Phase 5 or 6 produced, because it would mean the harness has to
-interrupt the model to steer it, not merely tell it.
+Whether the cost mechanism is steering cost or attention failure remains open
+and is not resolvable by any arm in this run. It would need a counterfactual in
+which the same user-role text is re-presented mid-phase without a phase
+boundary, which is a new arm and not part of this decomposition.
+
+The message-role question, by contrast, is answered: H_SYS holds text and
+cadence exactly constant against H_P and drops 25% -> 15% when the banner moves
+to the system role. It is load-bearing, ~10 points, in the direction that
+strengthens the control-plane reading -- the harness has to interrupt the model
+to steer it, not merely tell it.

@@ -122,6 +122,38 @@ FEEDBACK_INSTRUCTION = (
     "final result of the suite."
 )
 
+# Phase 7 banner decomposition. The recorded H_D / H_P behaviour injects the phase
+# instruction once at each phase start ("full"). SWE_LAB_BANNER selects the per-turn
+# variant: "once" injects the banner only on turn 1, "neutral" injects a bare
+# "Turn k of T" status line every turn, "action" injects the phase goal only, and
+# "phase" injects the full phase instruction every turn. Tools, budget, allocation
+# and system prompt are untouched -- only the per-turn control-plane text varies.
+ACTION_GOALS = {
+    "plan": "inspect the repository and identify the defect to fix",
+    "execute": "make the repair on disk now with bash and edit",
+    "feedback": "re-run the failing tests, repair what remains, and report the result",
+}
+
+
+def banner_mode():
+    """SWE_LAB_BANNER, defaulting to "full" (the recorded per-phase behaviour)."""
+    return os.environ.get("SWE_LAB_BANNER", "").strip().lower() or "full"
+
+
+def banner_for(mode, phase, plan, had_plan, idx, total, turns, turn_no, budget):
+    """The banner text for completion turn_no (1-based), or None for no banner."""
+    if mode == "full":
+        return None  # phase-start injection, handled by the caller
+    if mode == "once":
+        return phase_instruction(phase, plan, had_plan, idx, total, turns) if turn_no == 1 else None
+    if mode == "neutral":
+        return "Turn %d of %s." % (turn_no, budget if budget else "?")
+    if mode == "action":
+        return "Phase: %s. Goal: %s." % (phase.upper(), ACTION_GOALS[phase])
+    if mode == "phase":
+        return phase_instruction(phase, plan, had_plan, idx, total, turns)
+    raise ValueError("unknown SWE_LAB_BANNER mode %r" % mode)
+
 
 def phase_instruction(phase, plan, had_plan, idx, total, turns):
     """The phase prompt. The default allocation uses the verbatim strings above (the ones
@@ -193,7 +225,7 @@ def initial_messages(args, initial):
     return messages
 
 
-async def run_phase(args, client, model, messages, tools, dispatch, servers, tool_client, read_only, max_calls, quiet):
+async def run_phase(args, client, model, messages, tools, dispatch, servers, tool_client, read_only, max_calls, quiet, banner=None, start_turn=0):
     """Run one phase, mirroring the stock loop's tool dispatch and compaction.
 
     Returns the conversation and the phase's closing text reply (empty when the phase
@@ -205,12 +237,16 @@ async def run_phase(args, client, model, messages, tools, dispatch, servers, too
     compactor.note_good(messages)
     calls = 0
     while True:
+        if banner is not None:
+            text = banner(start_turn + calls + 1)
+            if text:
+                messages.append({"role": "user", "content": text})
         completion, messages = await compactor.complete(messages)
         calls += 1
         message = completion.choices[0].message
         messages.append(message.model_dump(exclude_none=True))
         if not message.tool_calls:
-            return messages, (message.content or "").strip()
+            return messages, (message.content or "").strip(), calls
         tool_result_tokens = 0
         for call in message.tool_calls:
             name = call.function.name
@@ -258,7 +294,7 @@ async def run_phase(args, client, model, messages, tools, dispatch, servers, too
         if compactor.reached(completion, tool_result_tokens) and compactable(messages):
             messages = await compactor.compact(messages)
         if max_calls is not None and calls >= max_calls:
-            return messages, ""
+            return messages, "", calls
 
 
 async def phased_main():
@@ -303,14 +339,23 @@ async def phased_main():
         prompts = (not quiet) and os.environ.get("SWE_LAB_PROMPTS", "1") != "0"
         gate = os.environ.get("SWE_LAB_GATE", "1") != "0"
         plan = ""
+        mode = banner_mode()
+        budget = os.environ.get("SWE_LAB_TURNS", "")
+        used = 0
         for idx, (phase, max_calls) in enumerate(allocation, 1):
             tools = phase_tools(phase, args, gate) + mcp_tools
             turns = max_calls if max_calls is not None else 0
-            if prompts:
+            if prompts and mode == "full":
                 messages.append({"role": "user", "content": phase_instruction(phase, plan, had_plan, idx, total, turns)})
-            messages, reply = await run_phase(
+
+            def banner_fn(turn_no, _phase=phase, _idx=idx, _turns=turns):
+                return banner_for(mode, _phase, plan, had_plan, _idx, total, _turns, turn_no, budget)
+
+            messages, reply, used = await run_phase(
                 args, client, args.model, messages, tools, dispatch, servers, tool_client,
                 read_only=(phase == "plan" and gate), max_calls=max_calls, quiet=not prompts,
+                banner=banner_fn if (prompts and mode != "full") else None,
+                start_turn=used,
             )
             if phase == "plan":
                 plan = reply

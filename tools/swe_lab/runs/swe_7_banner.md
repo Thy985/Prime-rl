@@ -165,18 +165,37 @@ frequency on top of content costs a little.
 
 ## Mechanism statement
 
-Phase 5 framed the result as "the per-turn banner, not the tool affordance, is
-the mechanism." Phase 6 confirmed it (H_P == H_D at T=6; the silent tool-list
-change does nothing). Phase 7 sharpens it from one claim into four, and
-replaces the framing's "repeated injection" with three load-bearing dimensions:
+Across Phases 5-7 the claim narrows three times:
 
-> Harness 的作用不是"每轮重复注入上下文"，而是"在决策边界处，以用户消息中断的形式，
-> 广播控制平面的当前阶段状态"。
+  Phase 5  Harness 改变了行为。
+  Phase 6  不是 tool gating 改变行为。
+  Phase 7  Runtime context injection 改变行为，且 role、cadence、content 都影响效果。
 
-The three dimensions -- content, cadence and message role -- each drop the
-effect from 25% to 15% when misspecified, and repetition is the necessary
-condition underneath them all: one announcement of the right content and role
-still yields the baseline.
+> Harness 的作用不是"告知" Agent，而是 Runtime 在每个决策周期以 user-turn 形式
+> 重新构造 Agent 的局部上下文。
+
+More precisely: the control plane reads the runtime state and injects it into
+the model's turn at the phase boundaries, and the injection's role, cadence and
+content are each independently load-bearing.
+
+  Runtime state
+      |
+  Control-plane injection
+      |-- role
+      |-- cadence
+      `-- content
+      |
+  Agent local decision context
+      |
+  action allocation
+      |
+  inspect / edit / test
+      |
+  task outcome
+
+The three dimensions each drop the effect from 25% to 15% when misspecified,
+and repetition is the necessary condition underneath them all: one announcement
+of the right content and role still yields the baseline.
 
 The announcement has a marginal cost as well as a marginal benefit. The benefit
 is one redirected turn: the injected text re-aligns the agent's next action to
@@ -218,15 +237,37 @@ announcement does not add -- it may even pull the agent back to re-reading the
 phase instead of acting in it. What H_P does is announce the phase at the moment
 the agent is choosing what the phase is for, and then leave it alone.
 
-The role result strengthens the control-plane reading rather than merely adding
-a fourth factor. A control plane whose announcements must arrive as user-role
-interruptions at the phase boundaries is a more specific claim than one whose
-announcements may sit anywhere in the message history: the runtime has to
-*interrupt* the model to steer it, not just tell it. A system-message banner is
-part of the model's standing instructions and is apparently already attended to
-before the decision point arrives; a user-message banner lands on the turn that
-needs steering. That distinction was the point of the control-plane framing in
-Phase 5 and 6 and it is what Phase 7 confirms.
+The role result is the one that most needs wording restraint. H_SYS establishes
+only that a system-role copy of the same text at the same cadence is not
+equivalent to the user-role one. It does not establish *why*. That the message
+lands on a task turn, that system text is absorbed before the decision point,
+and that the runtime must interrupt rather than merely tell are three different
+accounts, and H_SYS cannot separate them because it fixes only the role and
+varies nothing else. The honest statement is the weaker one:
+
+> the intervention is a user-turn runtime injection, not a standing
+> instruction; and per-decision placement, not per-phase placement, is what
+> carries the effect.
+
+That is what the control-plane framing was aiming at and what Phase 7
+supports. It is not a claim about interruption as a mechanism.
+
+## Boundary of the claim
+
+The claim supported here is not "the harness improves reasoning". It is:
+
+> Runtime intervention changes *action allocation* under a fixed model and a
+> fixed interaction budget.
+
+n_calls is 5.5-5.8 in every arm, so the model is not working harder or for
+longer; what moves is how a fixed number of calls is distributed across inspect,
+edit and test. The banner does not add reasoning capacity to a fixed budget, it
+changes where the budget goes.
+
+A further hypothesis is worth stating because Phases 5-7 make it testable,
+though it is not established here: part of what gets called Agent intelligence
+may be Runtime contextualization quality at each decision point rather than
+model capability. That is a research question, not a finding of this run.
 
 ## Discipline note
 
@@ -254,6 +295,6 @@ boundary, which is a new arm and not part of this decomposition.
 
 The message-role question, by contrast, is answered: H_SYS holds text and
 cadence exactly constant against H_P and drops 25% -> 15% when the banner moves
-to the system role. It is load-bearing, ~10 points, in the direction that
-strengthens the control-plane reading -- the harness has to interrupt the model
-to steer it, not merely tell it.
+to the system role. The role is load-bearing, ~10 points. What the role *does*
+-- whether it is attention, salience or position -- is a separate question this
+arm does not answer.

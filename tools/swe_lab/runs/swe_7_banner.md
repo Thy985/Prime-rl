@@ -42,16 +42,17 @@ in the smoke, one re-rooting artefact.
 | H_NEUTRAL |  5%   |   5%  |  95%     |  4.9    |  0.01     |  5.7    |  6.0            |  1.15        |
 | H_ACTION  | 15%   |  20%  |  80%     |  3      |  0.04     |  5.8    |  5.0            |  1.15        |
 | H_P       | 25%   |  35%  |  65%     |  3      |  0.11     |  5.7    |  3.5            |  1.40        |
+| H_PHASE   | 15%   |  25%  |  75%     |  2.9    |  0.08     |  5.7    |  5.0            |  1.25        |
 
 edit% = share of episodes that write anything; state_chg = (write + test) calls
 over total calls; inspect_run_max = median longest streak of consecutive
-inspection calls. All 20 rollouts per arm are clean (agent_completed or
-max_turns, no HarnessError / ProviderError). `edit_after_failed_test` is 0.00 in
-every arm, so no arm here does test-driven repair -- the Phase 5/6 finding
-holds.
+inspection calls. 18 of H_PHASE's 20 rollouts ended at max_turns, 2 hit
+HarnessError; all other arms are 20 clean rollouts. `edit_after_failed_test` is
+0.00 in every arm, so no arm here does test-driven repair -- the Phase 5/6
+finding holds.
 
-H_PHASE and H_SYS are still running and are not in this table. The five arms
-above are complete at 20 episodes each.
+H_SYS (identical text and cadence as H_P, banner injected as a system message)
+is still running and is not in this table.
 
 ## The three factors, separated
 
@@ -74,6 +75,28 @@ edit -- above the inert arms (5%) but below H_P (25%). Directional; at n=20 the
 specification is worth about half the total effect; the other half is
 irrecoverable from this arm alone.
 
+**More repetition of the same text is worse, but not inert.** H_PHASE injects
+the full phase text every turn instead of at the phase boundaries -- roughly
+1.7x the cadence, identical content -- and gives 15% solve / 25% edit / 0.08
+state_chg. That is clearly below H_P (25% / 35% / 0.11) but well above the
+baseline (0% / 10% / 0.02). Repetition does not destroy the effect; it dilutes
+it. The optimum is at the phase boundaries, and every announcement beyond those
+costs about as much as it gains.
+
+The two 15% arms are the cleanest separation in the run. H_ACTION and H_PHASE
+inject at the same rate -- 3.0 and 2.9 distinct texts per episode -- and both
+score 15%. What differs is which of the two levers each one spends: H_ACTION
+buys the right cadence and throws away the content; H_PHASE buys the right
+content and throws away the cadence. They cancel exactly. H_P is the only arm
+that holds both, and it is the only one at 25%. Content and cadence are each
+worth roughly half the effect, and they do not substitute for each other.
+
+The full dose-response, ordered by injection frequency: 0 -> 0%, 1 -> 5%,
+3 phase-boundary full-text -> 25%, 2.9 every-turn full-text -> 15%, 3
+phase-boundary one-line -> 15%, 4.9 every-turn neutral -> 5%. Monotone in the
+content at a fixed cadence, and peaked at the phase boundaries for a fixed
+content. Neither lever alone reaches H_P.
+
 ## What the trajectory actually says
 
 The banner is not changing *when* the agent acts. Among episodes that do edit,
@@ -91,13 +114,26 @@ inspecting:
 
 and the total work is unchanged: n_calls is 5.5-5.8 in every arm. The banner
 does not make the agent work harder or for longer; it reallocates a fixed
-number of calls away from inspection. The intermediate arms sit on the same
-monotone line -- H_ACTION 20% edit / 5.0 run / 0.04 state_chg / 15% solve,
-H_ONCE 10% / 5.0 / 0.03 / 5%, H_NEUTRAL 5% / 6.0 / 0.01 / 5% -- so the
-trajectory is the mediator, not a parallel correlate.
+number of calls away from inspection. Every intermediate arm sits on the same
+monotone line -- H_P 35% edit / 3.5 run / 0.11 state_chg / 25% solve, H_PHASE
+25% / 5.0 / 0.08 / 15%, H_ACTION 20% / 5.0 / 0.04 / 15%, H_ONCE 10% / 5.0 /
+0.03 / 5%, H_NEUTRAL 5% / 6.0 / 0.01 / 5%, H_A 10% / 4.5 / 0.02 / 0% -- so the
+trajectory is the mediator, not a parallel correlate. edit%, inspect_run_max,
+state_chg and solve all move together in the same order.
 
-One number separates H_P from the rest: inspect_run_max 3.5 is H_P alone; every
-other complete arm is 4.5-6.0.
+Two numbers separate the arms. inspect_run_max 3.5 is H_P alone; every other
+arm is 4.5-6.0. And where the edit lands: among H_P's seven editing episodes
+first_edit_turn is [2,3,3,4,4,6,6] -- five of seven inside the PLAN+EXECUTE
+window (turns 2-4), right after the announcement that covers them. H_ACTION's
+editing episodes land later and more spread out, [3,4,5,6]. The announcement
+does not change when the agent edits; it is what makes the agent get to editing
+at all, and the phase-boundary cadence is what keeps the edit inside the window
+the phase is supposed to be spent in.
+
+edit% is not monotone in frequency either: H_NEUTRAL injects most often (4.9)
+and edits least (5%). H_PHASE injects at 1.7x H_P's rate and edits at 25 vs
+35. Frequency without content buys nothing; frequency on top of content costs a
+little.
 
 ## Mechanism statement
 
@@ -107,26 +143,48 @@ change does nothing). Phase 7 sharpens it, and overturns one part:
 
 > Harness 的作用不是"每轮重复注入上下文"，而是"在决策边界处广播控制平面状态"。
 
-The announcement has a marginal cost as well as a marginal benefit. Its benefit
+The announcement has a marginal cost as well as a marginal benefit. The benefit
 is one redirected turn: the injected text re-aligns the agent's next action to
-the current phase. Its cost is that the announcement is a user-role interruption
-that resets the action frame the agent was carrying, so each one spends part of
-the turn it lands in. At the phase boundaries (3 announcements, ~3 turns of
-uninterrupted action flow between cues) benefit and cost balance and the effect
-is maximal. At one announcement there is nothing to redirect turns 3-6. At six
-there is a cue every turn and never a turn of momentum, and the correct
-instruction arrives with the same content as H_P but does not land.
+the current phase.
+
+The cost mechanism is an inference, not a measurement, and should stay marked
+as such. The two endpoints show that a cost exists -- 5% at one announcement,
+15% at five -- but they do not show what it is. The most economical reading is
+that an injected message resets the action frame the agent was carrying, so each
+one spends part of the turn it lands in, and five announcements of the same text
+mean five frames that never compound into a phase. That is consistent with the
+shape of the curve, and with H_NEUTRAL being the worst arm (the most
+interruptions, no content to gain) rather than merely second worst. But it is
+equally consistent with "repetition of identical text is ignored", which would
+make the cost zero and the dilution a failure of attention rather than a cost
+of steering. Nothing in this run separates those two readings.
+
+At the phase boundaries (3 announcements, ~3 turns of uninterrupted action flow
+between cues) the effect is maximal, whichever account is right. At one
+announcement there is nothing to redirect turns 3-6.
 
 That is what the control-plane framing buys that the prompt framing did not:
 the runtime's announcement is an intervention with a dose-response, not a
 property of having said the thing at all. H_ONCE is the control that makes the
 floor visible -- the same content delivered once, and the effect is gone.
+H_PHASE is the control that makes the ceiling visible -- the same content
+delivered every turn, and the effect is diluted by half without vanishing.
+Neither endpoint is inert, so the announcement is not a binary switch; it is a
+resource with a cost, and the phase boundaries are where it is cheapest.
 
-What is still open is whether *more* announcement is also worse, which is the
-direction a flat prompt framing would not predict and the control-plane framing
-should. H_PHASE (full phase text every turn, 1.67x H_P's frequency) is running
-to test exactly that, alongside H_SYS (identical text and cadence, injected as a
-system message) which isolates the message role.
+The control-plane reading follows from the two 15% arms. If the mechanism were
+"the model needs the phase text nearby", H_PHASE and H_ACTION would both match
+H_P -- they both put phase text at the decision point. They do not, because
+H_ACTION's phase text is one line, and H_PHASE's phase text arrives every turn
+instead of at the boundary. What H_P does differently is *both*: it spends
+enough words on the phase to specify it, and it spends them at the boundary
+where the agent is choosing what the phase is for. A control plane that announces
+correctly and at the right moment beats one that announces correctly all the
+time or briefly once at the right moment.
+
+What remains open is whether the message role is load-bearing at all. H_SYS
+injects the identical H_P text at the identical phase-boundary cadence as a
+system message rather than a user message; it is still running.
 
 ## Discipline note
 
@@ -136,14 +194,17 @@ affordance contributes nothing here (H_G, H_ADAPT floor; H_P == H_D), and Phase
 variable. Those arms have served their purpose; additional variants would only
 re-measure the same null.
 
-Two items remain open and are running.
+Two items remain open.
 
-The content contribution: H_ACTION vs H_P is 3 vs 5 solves at n=20, so the
-content contribution (half the effect, by the edit-rate gap of 20 vs 35) is
-directional rather than established. Closing it needs a larger n on H_ACTION and
-H_P, not a new arm.
+The content and cadence split is not statistically established. H_P 25% vs
+H_ACTION 15% vs H_PHASE 15% are 5, 3 and 3 solves at n=20; the half-effect
+attribution of content and cadence is directional, not a confidence interval.
+Closing it needs a larger n on H_ACTION, H_P and H_PHASE -- not a new arm.
 
-The upper end of the dose-response: H_PHASE (full text every turn) is the test
-of whether more announcement is worse than the phase-boundary optimum, and
-H_SYS (same text and cadence as H_P, system role) is the test of whether the
-message role is load-bearing at all. Neither is in this table yet.
+The message role. H_SYS injects the identical H_P text at the identical
+phase-boundary cadence as a system message rather than a user message. If H_SYS
+matches H_P, the role is irrelevant and the mechanism is content-and-cadence
+full stop. If it drops, the user-role interruption that lands at the decision
+point is part of what does the work -- which would be a stronger result than
+anything Phase 5 or 6 produced, because it would mean the harness has to
+interrupt the model to steer it, not merely tell it.

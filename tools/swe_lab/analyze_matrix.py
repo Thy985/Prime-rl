@@ -29,6 +29,8 @@ RUNS = {
     ("H_A", 8): ["outputs/rl-6c-hA-T8"],
     ("H_D", 8): ["outputs/rl-6c-hD-T8"],
     ("H_ADAPT", 8): ["outputs/rl-6c-hAdapt-T8"],
+    ("H_P", 6): ["outputs/rl-6c-hP-T6"],
+    ("H_G", 6): ["outputs/rl-6c-hG-T6"],
 }
 
 def main() -> int:

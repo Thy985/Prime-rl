@@ -23,14 +23,56 @@ real `edit` tool calls; test = real suite invocation.
 | harness   | T=2 sol/ed/t  | T=4 sol/ed/t  | T=6 sol/ed/t  | T=8 sol/ed/t  |
 |-----------|---------------|---------------|---------------|---------------|
 | H_A       | 0/0/0         | 0/0/0 (n=20)  | 0/2/0         | 3/4/2         |
+| H_P       | -             | 3/5/3 (n=40)  | 5/7/1         | -             |
+| H_G       | -             | 2/2/0 (n=40)  | 1/3/0         | -             |
 | H_D       | 0/0/0         | 2/4/1 (n=40)  | 5/6/4         | 2/6/2         |
 | H_ADAPT   | 0/0/0         | 0/1/0 (n=20)  | 1/2/0         | 3/4/2         |
 
 (sol/edit/test out of 20 unless the n is noted; T=4 H_D/H_G/H_P are pooled to 40
-from the 6A repeats.)
+from the 6A repeats. H_P/H_G were run at T=6 only, as the banner-vs-gate
+decomposition at the budget where the effect lives.)
 
 H_D's per-budget solves: T=4 5%, T=6 25%, T=8 10%. H_A's: T=4-6 0%, T=8 15%.
 H_ADAPT's: T=4-6 0-5%, T=8 15%. T=2 is a clean 0% for all three.
+
+## The T=6 decomposition: the banner is the mechanism, the gate is not
+
+The extension arms isolate the two signals where the effect lives (T=6, the
+budget at which H_D peaks):
+
+| arm    | solve | edits | tests | mechanism present          |
+|--------|-------|-------|-------|---------------------------|
+| H_A    | 0/20  | 2/20  | 0/20  | none                      |
+| H_P    | 5/20  | 7/20  | 1/20  | per-turn banner only      |
+| H_D    | 5/20  | 6/20  | 4/20  | banner + silent gate      |
+| H_G    | 1/20  | 3/20  | 0/20  | silent gate only          |
+| H_ADAPT| 1/20  | 2/20  | 0/20  | adaptive scheduler only   |
+
+H_P -- the phase banner with the edit tool present every turn, no gating --
+reproduces H_D's solve rate exactly (5/20 = 25%) and beats H_D on edits
+(7 vs 6). H_G -- the same gating as H_D with the banner neutralised -- lands at
+the free-agent floor (1/20, 3 edits). The Phase-6A question ("does silent gating
+push the first edit earlier? if so, and the banner cannot, affordance scheduling
+is established") is answered in the negative: **the banner does it, the silent
+gate does not.** Dots3 does not notice the tool list changing; it does notice the
+per-turn phase announcement ("PHASE 2 of 3 -- EXECUTE ... apply the repair
+now"). The gate's only measurable extra over the banner is test runs (H_D 4 vs
+H_P 1) -- the feedback phase prompt does drive suite runs -- but that does not
+translate into more solves at T=6.
+
+This refines Phase 5's "runtime-enforced structure > static instruction": the
+triangle proved a *static* paragraph is inert, and the pilot attributed H_D's
+gain to the enforcement. The 2x2 shows the effective ingredient is the *per-turn*
+announcement, which the pilot's design never isolated: H_D's effect is the
+banner's, and the enforcement (edit removal) adds nothing on the wide set. The
+causal chain is announcement -> the model edits at the announced turn -> a
+fraction of those edits land. The affordance itself (which tools exist) is not
+the lever dots3 responds to.
+
+The H_ADAPT comparison is then mostly the same negative: an adaptive scheduler
+with no banner is a silent gate with worse timing (recon-2 tax), so it sits at
+the H_G/H_A floor until T=8, where the free budget carries it to 15% alongside
+H_A.
 
 ## Three findings
 

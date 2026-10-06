@@ -86,7 +86,7 @@ budget.**
 - Runs: `outputs/rl-8c-{hA,hOnce,hP,hReplay}-{s1,s2}`, `outputs/rl-8-hReplay`.
   Phase 8A runs **do not exist** — there are no `rl-8-bunny-*` or
   `rl-8-deeps-*` directories at all. Only the smokes completed
-  (`outputs/smoke8-bunny`, `smoke8-bunny-hP`, `smoke8-deeps-hP`). That is the
+  (`outputs/smoke8b-bunny`, `smoke8-bunny-hP`, `smoke8-deeps-hP`). That is the
   physical evidence for H18 being untested: the configs were written and the
   endpoint was reachable, but the runs were never launched. The only completed
   bunny evaluations are the Phase 6 budget arms

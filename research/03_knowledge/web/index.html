@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Research Map — Agent Runtime Intervention</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <div class="headline-wrap">
+    <h1>研究流程图 · Research Map</h1>
+    <p class="subtitle">Agent Runtime Intervention on SWE Agent Behaviour · 冻结点 <code>research-p8c-final</code> = <code>a5975ac74</code></p>
+  </div>
+  <div class="headline-box">
+    <span class="hl-label">一行结论</span>
+    <blockquote id="headline"></blockquote>
+  </div>
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="搜索节点、问题、概念…" autocomplete="off">
+    <div class="filters" id="filters"></div>
+    <div class="view-actions">
+      <button id="btn-chain" class="btn">从当前结论反向看支持链</button>
+      <button id="btn-reset" class="btn ghost">重置视图</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="map-panel">
+    <div id="legend" class="legend"></div>
+    <svg id="graph" viewBox="0 0 1540 880" role="img" aria-label="研究流程节点图"></svg>
+    <div class="map-footer">
+      <span>点击节点查看详情 · 颜色 = 节点状态（绿=稳 / 蓝=缩水 / 红=被否、撤回 / 橙=未测、开放 / 深绿=冻结） · 连线 = 关系（标签在线上）</span>
+    </div>
+  </section>
+
+  <aside id="detail-panel">
+    <div id="detail-empty" class="detail-empty">
+      <p>← 点击一个节点</p>
+      <p class="muted">每个节点讲一件事：发生了什么、为什么走到这里、真正的问题、原来的想法、做了什么、得到什么、理解了变化了什么、证据。</p>
+    </div>
+    <div id="detail-content" class="detail-content" hidden></div>
+  </aside>
+</main>
+
+<footer>
+  <p>知识来源：<code>research/03_knowledge/</code>（map.md + nodes/ + knowledge_graph.json）→ 网页只从这里渲染。</p>
+</footer>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

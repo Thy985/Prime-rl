@@ -1,0 +1,4 @@
+session_id	path	bytes	sha256_16	records	n_user	n_assistant	n_tool_calls	model	start	end	top_tools
+main	dsh-session/session.v4.jsonl	28865619	0f2455bec92b28e1	8982	139	1630	3342	LunXun	2026-10-02 17:13:52	2026-10-06 06:17:21	pwsh:2370; job_output:406; read:290; grep:98; todo_write:50; edit:30; job_kill:28; write:26
+55978c6a-46c0-441b-8f1c-31afcbf12348	subagents/55978c6a-46c0-441b-8f1c-31afcbf12348/session.v4.jsonl	29085466	57b41963799cdef6	9233	134	1681	3454	LunXun	2026-10-02 17:13:52	2026-10-05 23:41:53	pwsh:2414; job_output:422; read:320; grep:112; todo_write:50; job_kill:32; edit:30; write:30
+e374ab45-75e4-4c58-998d-7c8f95e29656	subagents/e374ab45-75e4-4c58-998d-7c8f95e29656/session.v4.jsonl	28161312	16e43ae465bd39f0	8808	133	1599	3282	LunXun	2026-10-02 17:13:52	2026-10-05 22:50:06	pwsh:2320; job_output:408; read:284; grep:98; todo_write:50; edit:30; job_kill:28; write:22

@@ -83,8 +83,14 @@ budget.**
   `eval_real_8_deeps_{hA,hP,hOnce}.toml`, `eval_real_6c_bunny_*`
 - Analysis: `analyze_banner.py` (ARMS updated for H_REPLAY),
   `analyze_cross_model.py`
-- Runs: `outputs/rl-8c-{hA,hOnce,hP,hReplay}-{s1,s2}`, `outputs/rl-8-hReplay`,
-  `outputs/rl-8-bunny-*`, `outputs/rl-8-deeps-*`, `outputs/smoke8-*`
+- Runs: `outputs/rl-8c-{hA,hOnce,hP,hReplay}-{s1,s2}`, `outputs/rl-8-hReplay`.
+  Phase 8A runs **do not exist** — there are no `rl-8-bunny-*` or
+  `rl-8-deeps-*` directories at all. Only the smokes completed
+  (`outputs/smoke8-bunny`, `smoke8-bunny-hP`, `smoke8-deeps-hP`). That is the
+  physical evidence for H18 being untested: the configs were written and the
+  endpoint was reachable, but the runs were never launched. The only completed
+  bunny evaluations are the Phase 6 budget arms
+  (`outputs/rl-6c-bunny-h{A,D,Adapt}-T6`).
 - Writeup (frozen text): `tools/swe_lab/runs/swe_8c_expanded.md`
   — revised at `a5975ac74` (+65/−55 vs `b257519fe`)
 - Tag: `research-p8c-final`

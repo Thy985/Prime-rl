@@ -81,11 +81,54 @@ verification — it is *editing more often before the budget runs out*.
   `625653bb4`, `9136aac03`, `a867f112d`, `e559251f3`, `6bc971c6b`
 - Code: `tools/swe_lab_env/swe_bench/{prepare,verify,taskset}.py`,
   `gating.py`, `behavior_real.py`, `analyze_cross_model.py`
-- Configs: `eval_real_{hA,hD,hA_prime,hP}.toml`, `eval_real_wide_{hA,hD}.toml`,
-  `eval_real_{hA,hD}_T{T}.toml`, `eval_sft_local.toml`, `sft_real_D.toml`
+- Configs: `eval_real_{hA,hD,hA_prime,hP}.toml` (T=4 pilot, `max_turns = 4`),
+  `eval_real_wide_{hA,hD}.toml`, `eval_sft_local.toml`, `sft_real_D.toml`.
+  Per-T sweep configs were generated to `/tmp/sweep/` at run time by the
+  reproducer's `sed` and are **not** in the tree; only the T=4 base configs
+  survive.
 - Runs: `outputs/rl-hA`, `outputs/rl-hD`, `outputs/rl-hAp`, `outputs/rl-wide-hA`,
   `outputs/rl-wide-hD`, `outputs/rl-sb-hA`, `outputs/rl-sb-hD`,
-  `outputs/rl-{hA,hD}-T{2,4,6,8}(-topup)`
+  `outputs/rl-{hA,hD}-T{2,6,8}` and their `-topup` companions where they exist.
+
+## Reconstructability of the budget-sweep table — verified, all eight cells
+
+The writeup's `16 per cell` is a **weighted pool of two directories**, and the
+pool reproduces every cell exactly (checked cell by cell during archival):
+
+- base run: `num_examples = 5`, `group_size = 2` => **10 episodes**
+- topup run: the reproducer's `-n 2 -r 3` => **6 episodes**
+- pooled cell: **10 + 6 = 16 episodes**
+
+| T | arm | base pass@1 (10 eps) | topup pass@1 (6 eps) | pooled | writeup | |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2 | H_A | 0/10 | 0/6 | **0/16** | 0/16 | exact |
+| 2 | H_D | 0/10 | 1/6 | **1/16** | 1/16 | exact |
+| 4 | H_A | 1/10 | 1/6 | **2/16** | 2/16 | exact |
+| 4 | H_D | 3/10 | 4/6 | **7/16** | 7/16 | exact |
+| 6 | H_A | 3/10 | 2/6 | **5/16** | 5/16 | exact |
+| 6 | H_D | 3/10 | 5/6 | **8/16** | 8/16 | exact |
+| 8 | H_A | 3/10 | 5/6 | **8/16** | 8/16 | exact |
+| 8 | H_D | 2/10 | 5/6 | **7/16** | 7/16 | exact |
+
+Notes for the reader:
+
+1. **T=4 has no directory of its own** — it is the base config
+   (`eval_real_hA.toml` / `eval_real_hD.toml`, `max_turns = 4`). The reproducer
+   loops `for T in 2 6 8` and generates per-T configs to `/tmp/sweep/` at run
+   time, so only the T=4 configs survive in the tree. The writeup's T=4 row is
+   the pool of `rl-hA`+`rl-hA-topup` and `rl-hD`+`rl-hD-topup`.
+2. **`runs_inventory.tsv` cannot reproduce a cell on its own** — it records one
+   `pass@1` per directory (e.g. `rl-hD` 0.3, `rl-hD-topup` 0.6667), and a cell
+   is the weighted pool of the pair. Single-directory numbers must not be
+   quoted as cell values.
+3. The numbers behind the archive's most-cited figure (+32pt at T=4) are exact,
+   not approximate. What is not archived is the *curve-shape claim* in prose
+   form; the numbers themselves are fully reconstructable.
+- **Do not conflate the two T=6 measurements.** E06's T=6 decomposition
+  (H_P 25% / H_G 5.6% / H_D 29.4%) is on the wide 20-instance set
+  (`rl-6c-h{P,G,D}-T6`, n=20, `max_turns = 6` confirmed in config). The
+  budget-sweep T=6 row is on the 5-instance pilot grid. Same budget, different
+  task set; H_D reads 29.4% and 50% respectively while the direction agrees.
 - Writeups: `tools/swe_lab/runs/swe_bench_pilot.md`,
   `swe_budget_sweep.md`, `swe_second_model.md`, `swe_distill_verify.md`,
   `swe_stage_conclusion.md`

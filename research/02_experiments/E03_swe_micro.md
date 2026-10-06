@@ -61,7 +61,8 @@ could be compared at all.
   `5d00b430e`, `2755ba56f`, `997935c9b`, `ee1466a8c`, `a56e6ae13`, `6004a7559`,
   `462d6a866`
 - Code: `ladder.py`, `frontier.py`, `terrain.py`, `behavior.py`
-- Artifact: `tools/swe_lab/frontier_budget.json`
+- Artifacts: `tools/swe_lab/runs/frontier_budget.json` (budget frontier),
+  `tools/swe_lab/tiers/ladder_audit.json` (per-tier audits)
 - Analysis script: `analyze_matrix.py`
 - Runs: `outputs/swe-lab-harnessA`, `outputs/swe-lab-harnessB-noedit`,
   `outputs/swe-lab-harnessC-patchfirst` (E04 arms also live here)

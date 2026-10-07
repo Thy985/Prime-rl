@@ -1,0 +1,19 @@
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights:   6%|▌         | 18/311 [00:00<00:01, 170.50it/s]
+Loading weights:  14%|█▎        | 42/311 [00:00<00:01, 210.11it/s]
+Loading weights:  22%|██▏       | 69/311 [00:00<00:01, 236.55it/s]
+Loading weights:  30%|██▉       | 93/311 [00:00<00:00, 231.03it/s]
+Loading weights:  39%|███▉      | 122/311 [00:00<00:00, 251.09it/s]
+Loading weights:  49%|████▉     | 153/311 [00:00<00:00, 264.23it/s]
+Loading weights:  58%|█████▊    | 180/311 [00:00<00:00, 260.73it/s]
+Loading weights:  67%|██████▋   | 207/311 [00:00<00:00, 251.45it/s]
+Loading weights:  75%|███████▍  | 233/311 [00:00<00:00, 246.16it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 322.41it/s]
+22:07:15    INFO LoRA enabled: 10,092,544 adapter params adapting 440,401,920 base params
+22:07:15    INFO LoRA: 0 fully trainable parameters
+22:07:15    INFO LoRA: 440,401,920 adapted or fully trainable out of 606,142,464 parameters
+step=1/4 train_reward=0.073 loss=-0.0850 grads=196/392 | held(7) mean_lcs=0.040 exact=0/7
+step=2/4 train_reward=0.118 loss=-2.8788 grads=392/392 | held(7) mean_lcs=0.092 exact=0/7
+step=3/4 train_reward=0.174 loss=-5.4026 grads=392/392 | held(7) mean_lcs=0.141 exact=0/7
+step=4/4 train_reward=0.195 loss=-2.7710 grads=392/392 | held(7) mean_lcs=0.169 exact=0/7
+AB_RC=0

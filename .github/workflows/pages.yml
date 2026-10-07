@@ -1,0 +1,71 @@
+# Deploys the research archive as a GitHub Pages site.
+#
+# The artifact is laid out REPO-ROOT-RELATIVE: site/research/** plus the three
+# tools/** evidence files the knowledge graph points at. That keeps the paths
+# stored in research/03_knowledge/knowledge_graph.json (research/... and
+# tools/...) resolving unchanged, so the JSON needs no page-specific copy and
+# the same files work identically from file:// and from the deployed site.
+#
+# Prefix math: index.html is served at /research/03_knowledge/web/, and
+# meta.webPathPrefix is "../../../", which climbs back to the site root, then
+# re-enters at research/... or tools/...
+#
+# Known limitation: evidence links ending in .md are served as raw text, so
+# they render as unformatted source rather than as pages.
+name: Pages
+
+on:
+  push:
+    # "exp/swe-verifier-terrain" lets the site be previewed before the archive
+    # PR merges. Drop that entry once the branch is gone.
+    branches: [main, exp/swe-verifier-terrain]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage site
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p site/research site/tools/swe_lab/runs
+          cp -r research/. site/research/
+          cp tools/swe_lab/PLAN.md site/tools/swe_lab/PLAN.md
+          cp tools/swe_lab/runs/frontier_budget.json site/tools/swe_lab/runs/
+          cp tools/swe_lab/runs/swe_budget_sweep.md site/tools/swe_lab/runs/
+
+          {
+            echo '<!DOCTYPE html>'
+            echo '<html lang="en">'
+            echo '<head><meta charset="utf-8">'
+            echo '<meta http-equiv="refresh" content="0; url=research/03_knowledge/web/index.html">'
+            echo '<title>Prime-rl research</title></head>'
+            echo '<body><p><a href="research/03_knowledge/web/index.html">Research knowledge map</a></p></body>'
+            echo '</html>'
+          } > site/index.html
+
+          echo "staged files: $(find site -type f | wc -l)"
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

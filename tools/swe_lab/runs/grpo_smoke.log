@@ -1,0 +1,15 @@
+Loading weights:   0%|          | 0/311 [00:00<?, ?it/s]
+Loading weights:  33%|███▎      | 102/311 [00:00<00:00, 1018.46it/s]
+Loading weights: 100%|██████████| 311/311 [00:00<00:00, 1564.10it/s]
+21:37:23    INFO LoRA enabled: 10,092,544 adapter params adapting 440,401,920 base params
+21:37:23    INFO LoRA: 0 fully trainable parameters
+21:37:23    INFO LoRA: 440,401,920 adapted or fully trainable out of 606,142,464 parameters
+VERIFIER per-group rewards: {'hello': [0.0, 0.0, 0.174, 0.0], 'world': [0.051, 0.125, 0.0, 0.035], 'reverse this': [0.0, 0.151, 0.389, 0.389]}
+lora token-len forward counts handled; groups: 3
+sample sizes : [246, 281, 260, 277, 256, 274, 249, 262, 295, 274, 270, 277]
+ADVANTAGE    : [-0.577, -0.577, 1.73, -0.577, -0.034, 1.579, -1.156, -0.389, -1.401, -0.492, 0.946, 0.946]
+VOLTAGE/LOSS : -0.14543914794921875
+LoRA grads   : 196 / 392  delta nonzero: 196  total_abs=44.16895
+
+CLOSED on GPU offline: sampler -> verifier -> reward -> advantage -> LoRA delta.
+SMOKE_RC=0
